@@ -1,0 +1,52 @@
+auto_constants:
+ae.f90: CNRLAE: NPARX
+	WRTSP8: IPS, NDIMU => NDIM ??
+bvp.f90: CNRLBV: NPARX
+	 RSPTBV: TY
+	 STHOPF: TY
+	 WRTBV8: IPS, NDIMU => NDIM
+equilibrium.f90: FFHBX: TY
+f2003.f90: none
+floquet.f90: none
+homcont.f90: global: HCONST, (NPARX), NEWCFILE, only used in:
+	     INHO: HCONST, NEWCFILE
+	     
+interfaces.f90: PVLSI: NPARX
+io.f90: getname: INDEXSTR
+	READC: EVERYTHING
+	READOLDC: EVERYTHING
+	STHD: A WHOLE BUNCH OF SHIT
+	WRITELIST: INDEXVAR
+	WRITEUZRLIST: INDEXMVAR
+	WRITESTRLIST: INDEXSTR
+	WRITEINTLIST: INDEXVAR
+	headng: unames, parnames
+	NEWLAB: IBR
+	FINDLB: SIRS, SFILE
+	READLB: UVALS, PARVALS, unames, parnames
+	READBV; PARVALS, parnames
+main.f90: global: ICU, parnames, AUTOPARAMETERS
+	  FINDLB_OR_STOP: SIRS
+	  AUTOI: NBC, NINT, NDIM
+	  INIT: EVERYTHING
+	  CLEANUP: A WHOLE BUNCH OF SHIT (might be everything allocatable)
+	  INIT1: IVTHL, TY
+maps.f90: FFNSX: TY
+periodic.f90: STPNTR: TY
+support.f90: CHECKSP: SP
+	     INITSTOPCNTS: STOPS, SP
+	     NAMEIDX: INDEXSTR
+	     INIT3: A WHOLE BUNCH OF SHIT
+toolboxae.f90: STPNUS: UVALS, PARVALS, unames, parnames
+toolboxae.f90: STPNUB: DATFILE, UVALS, PARVALS, unames, parnames
+	       FNCSBV: NPARX
+
+bvp:
+equilibrium: HMACH
+homcont: 
+io:
+optimization: HMACH
+periodic: HMACH
+support:
+toolboxae: HMACH
+toolboxbv: HMACH
