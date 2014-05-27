@@ -535,9 +535,8 @@ CONTAINS
   END FUNCTION LBITP
 
 ! ------- -------- -------
-  LOGICAL FUNCTION CHECKSP(ATYPE,IPS,ILP,ISP,AC)
-    USE AUTO_CONSTANTS, ONLY : AC_
-    TYPE(AC_), INTENT(IN)::AC
+  LOGICAL FUNCTION CHECKSP(ATYPE,IPS,ILP,ISP)
+    USE AUTO_CONSTANTS, ONLY : SP
     CHARACTER(LEN=*), INTENT(IN) :: ATYPE
     INTEGER, INTENT(IN) :: IPS,ILP,ISP
 
@@ -566,15 +565,15 @@ CONTAINS
        ENDIF
     END SELECT
 
-    DO I=1,SIZE(AC%SP)
-       J=SCAN(AC%SP(I)(3:),"-0123456789")+2
+    DO I=1,SIZE(SP)
+       J=SCAN(SP(I)(3:),"-0123456789")+2
        IF(J==2)THEN
-          J=LEN_TRIM(AC%SP(I))+1
+          J=LEN_TRIM(SP(I))+1
        ENDIF
-       IF (AC%SP(I)(1:J-1)==TRIM(ATYPE)) THEN
+       IF (SP(I)(1:J-1)==TRIM(ATYPE)) THEN
           CHECKSP=.TRUE.
-          IF (LEN_TRIM(AC%SP(I))>J-1)THEN
-             READ(AC%SP(I)(J:),*)M
+          IF (LEN_TRIM(SP(I))>J-1)THEN
+             READ(SP(I)(J:),*)M
              IF(M==0)THEN
                 CHECKSP=.FALSE.
              ENDIF
@@ -585,9 +584,8 @@ CONTAINS
   END FUNCTION CHECKSP
 
 ! ---------- ------------
-  SUBROUTINE INITSTOPCNTS(ISP,ILP,ITPST,COUNTS,AC)
-    USE AUTO_CONSTANTS, ONLY : AC_
-    TYPE(AC_), INTENT(IN) :: AC
+  SUBROUTINE INITSTOPCNTS(ISP,ILP,ITPST,COUNTS)
+    USE AUTO_CONSTANTS, ONLY : STOPS, SP
     INTEGER, INTENT(IN) :: ISP,ILP,ITPST
     INTEGER, INTENT(OUT) :: COUNTS(-9:14)
 
@@ -617,22 +615,22 @@ CONTAINS
 
     ! look both at SP and STOP: SP is for backwards compatibility
     ! but STOP is preferred
-    DO I=1,SIZE(AC%SP)
-       J=SCAN(AC%SP(I)(3:),"-0123456789")+2
+    DO I=1,SIZE(SP)
+       J=SCAN(SP(I)(3:),"-0123456789")+2
        IF (J>2) THEN
           DO NTY=-9,14
-             IF(AC%SP(I)(1:J-1)==TRIM(ATYPES(NTY))) THEN
-                READ(AC%SP(I)(J:),*)COUNTS(NTY)
+             IF(SP(I)(1:J-1)==TRIM(ATYPES(NTY))) THEN
+                READ(SP(I)(J:),*)COUNTS(NTY)
              ENDIF
           ENDDO
        ENDIF
     ENDDO
-    DO I=1,SIZE(AC%STOPS)
-       J=SCAN(AC%STOPS(I)(3:),"-0123456789")+2
+    DO I=1,SIZE(STOPS)
+       J=SCAN(STOPS(I)(3:),"-0123456789")+2
        IF (J>2) THEN
           DO NTY=-9,14
-             IF(AC%STOPS(I)(1:J-1)==TRIM(ATYPES(NTY))) THEN
-                READ(AC%STOPS(I)(J:),*)COUNTS(NTY)
+             IF(STOPS(I)(1:J-1)==TRIM(ATYPES(NTY))) THEN
+                READ(STOPS(I)(J:),*)COUNTS(NTY)
              ENDIF
           ENDDO
        ENDIF
@@ -850,11 +848,10 @@ CONTAINS
   END SUBROUTINE INIT2
 
 ! ---------- -----
-  SUBROUTINE INIT3(AP,ICP,PAR,THL,THU,IUZ,VUZ,AC)
+  SUBROUTINE INIT3(AP,ICP,PAR,THL,THU,IUZ,VUZ)
 
     USE AUTO_CONSTANTS, ONLY: IVTHL,IVTHU,IVUZR,IVUZSTOP,unames,parnames,SVFILE
 
-    TYPE(AC_), INTENT(IN) :: AC
     TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     DOUBLE PRECISION, INTENT(INOUT) :: PAR(:), THL(*), THU(*), VUZ(*)
