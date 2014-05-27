@@ -1,4 +1,4 @@
-auto_constants:
+auto_constants: a whole bunch of global variables
 ae.f90: CNRLAE: NPARX
 	WRTSP8: IPS, NDIMU => NDIM ??
 bvp.f90: CNRLBV: NPARX
@@ -41,12 +41,43 @@ toolboxae.f90: STPNUS: UVALS, PARVALS, unames, parnames
 toolboxae.f90: STPNUB: DATFILE, UVALS, PARVALS, unames, parnames
 	       FNCSBV: NPARX
 
-bvp:
+ae: no global variables
+
+bvp: IRTN, NRTN
+bvp.f90: SETRTN: IRTN, NTRN
+	 	
+homcont.f90: global: EVERYTHING
+	FBHO: NRTN, IRTN
+	TRANHO: NRTN, IRTN
+	PREHO: NRTN, IRTN
+optimization.f90: global: EVERYTHING
+	STPNPO: just AUTOBV, not indicated
+periodic.f90: global: EVERYTHING
+	BCPS: IRTN, NRTN
+	BCPL: IRTN, NRTN
+	BCPBP: IRTN, NRTN
+	BCPD: IRTN, NRTN
+	BCTR: IRTN, NRTN
+toolboxbv.f90: global: EVERYTHING
+	no USE BVP or IRTN/NRTN
+
 equilibrium: HMACH
-homcont: 
-io:
+
+homcont: a bunch of global variables
+homcont.f90: global vars are used throughout all routines, some of 		them in COMMON blocks :(
+main.f90: AUTOI:EVERYTHING
+
+io: ROOTSOL, CURSOL, MBR, MLAB
+	variables never appear outside io.f90
+io.f90: ubiquitous use everywhere
+	
 optimization: HMACH
+
 periodic: HMACH
-support:
+
+support: DTV, P0V, P1V, AV, EVV, ATYPES(constant)
+seems to be used pretty often
+
 toolboxae: HMACH
+
 toolboxbv: HMACH
