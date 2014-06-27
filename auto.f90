@@ -9,7 +9,6 @@
 !$    USE OMP_LIB
       USE COMPAT
 
-
       CONTAINS
 
       SUBROUTINE AUTENTRY() BIND(C)

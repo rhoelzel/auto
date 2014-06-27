@@ -6,7 +6,7 @@
 
       MODULE SOLVEBV
 
-      USE AUTO_CONSTANTS, ONLY: AUTOPARAMETERS
+      USE AUTO_TYPES, ONLY: AUTOCONTEXT, AUTOPARAMETERS
 
       IMPLICIT NONE
       PRIVATE
@@ -23,7 +23,7 @@
       CONTAINS
 
 !     ---------- ------
-      SUBROUTINE SOLVBV(IFST,AP,DET,PAR,ICP,FUNI,BCNI,ICNI,RDS,  &
+      SUBROUTINE SOLVBV(IFST,AC,DET,PAR,ICP,FUNI,BCNI,ICNI,RDS,  &
        NLLV,RLCUR,RLOLD,RLDOT,NDIM,UPS,UOLDPS,UDOTPS,UPOLDP,DTM, &
        DUPS,DRL,P0,P1,THL,THU)
 
@@ -34,14 +34,15 @@
 ! Sets up and solves the linear equations for one Newton/Chord iteration
 
       include 'interfaces.h'
-      TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+      TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+      TYPE(AUTOPARAMETERS), POINTER :: AP
       INTEGER IFST,NLLV,ICP(*),NDIM
       DOUBLE PRECISION, INTENT(OUT) :: DET
       DOUBLE PRECISION PAR(*),RDS
-      DOUBLE PRECISION RLOLD(AP%NFPR),RLCUR(AP%NFPR),RLDOT(AP%NFPR)
+      DOUBLE PRECISION RLOLD(AC%AP%NFPR),RLCUR(AC%AP%NFPR),RLDOT(AC%AP%NFPR)
       DOUBLE PRECISION UPS(NDIM,0:*),UDOTPS(NDIM,0:*),UOLDPS(NDIM,0:*)
       DOUBLE PRECISION UPOLDP(NDIM,0:*),DUPS(NDIM,0:*),DTM(*)
-      DOUBLE PRECISION DRL(AP%NFPR)
+      DOUBLE PRECISION DRL(AC%AP%NFPR)
       DOUBLE PRECISION, INTENT(OUT) :: P0(*),P1(*)
       DOUBLE PRECISION THL(*),THU(*)
 
@@ -72,6 +73,7 @@
 ! 1 (since their entries will then be recreated in conpar
 !  and setubv).
 
+      AP=>AC%AP
 
       IAM=MPIIAM()
       KWT=MPIKWT()
@@ -164,7 +166,7 @@
 !$    NT = OMP_GET_NUM_THREADS()
       IF(NLLV>=0.OR.IFST==1) &
         CALL SETUBV(NDIM,NA,NCOL,NINT,NFPR,NRC,NROW,NCLM,                &
-         FUNI,ICNI,AP,PAR,NPAR,ICP,A,B,C,DD(1,1,BASE+1),DUPS,            &
+         FUNI,ICNI,AC,PAR,NPAR,ICP,A,B,C,DD(1,1,BASE+1),DUPS,            &
          FCFC(1,BASE+1),UPS,UOLDPS,RLOLD,UDOTPS,UPOLDP,DTM,THU,          &
          IFST,IAM,IT,NT,IRF,ICF,IID,NLLV)
 
@@ -290,13 +292,13 @@
 
 !     ---------- ------
       SUBROUTINE SETUBV(NDIM,NA,NCOL,NINT,NCB,NRC,NRA,NCA,FUNI,         &
-       ICNI,AP,PAR,NPAR,ICP,AA,BB,CC,DD,FA,FCFC,                        &
+       ICNI,AC,PAR,NPAR,ICP,AA,BB,CC,DD,FA,FCFC,                        &
        UPS,UOLDPS,RLOLD,UDOTPS,UPOLDP,DTM,THU,IFST,IAM,IT,NT,IRF,ICF,IDB,NLLV)
 
       USE MESH
 
       INTEGER NDIM,NA,NCOL,NINT,NCB,NRC,NRA,NCA,IFST,IAM,IT,NT,NPAR
-      TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+      TYPE(AUTOCONTEXT), INTENT(IN) :: AC
       INTEGER ICP(*),IRF(NRA,*),ICF(NCA,*),IDB,NLLV
       DOUBLE PRECISION AA(NCA,NRA,*),BB(NCB,NRA,*),CC(NCA,NRC,*)
       DOUBLE PRECISION DD(NCB,NRC,*),FA(NRA,*),FCFC(NRC,*)
@@ -317,7 +319,7 @@
       N = ((IT+1)*NA+NT-1)/NT+1-I
       II = (I-1)*NCOL
       CALL SUBVPA(NDIM,N,NCOL,NINT,NCB,NRC,NRA,NCA,FUNI,ICNI,     &
-           AP,PAR,NPAR,ICP,AA(1,1,I),BB(1,1,I),CC(1,1,I),         &
+           AC,PAR,NPAR,ICP,AA(1,1,I),BB(1,1,I),CC(1,1,I),         &
            DD(1,1,I),FA(1,I),FCFC(1,I),UPS(1,II),UOLDPS(1,II),    &
            RLOLD,UDOTPS(1,II),UPOLDP(1,II),DTM(I),THU,WI,WP,WT,   &
            IRF(1,I),ICF(1,I),IFST,NLLV)
@@ -326,14 +328,14 @@
 
 !     ---------- ---------
       SUBROUTINE SUBVPA(NDIM,N,NCOL,NINT,NCB,NRC,NRA,NCA,FUNI,  &
-       ICNI,AP,PAR,NPAR,ICP,AA,BB,CC,DD,FA,FC,                  &
+       ICNI,AC,PAR,NPAR,ICP,AA,BB,CC,DD,FA,FC,                  &
        UPS,UOLDPS,RLOLD,UDOTPS,UPOLDP,DTM,THU,WI,WP,WT,IRF,ICF,IFST,NLLV)
 
 !     This is the per-CPU parallelized part of SETUBV
 
       include 'interfaces.h'
 
-      TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+      TYPE(AUTOCONTEXT), INTENT(IN) :: AC
       INTEGER NDIM,N,NCOL,NINT,NCB,NRC,NRA,NCA,ICP(*),NPAR
       DOUBLE PRECISION AA(NCA,NRA,*),BB(NCB,NRA,*),CC(NCA,NRC,*)
       DOUBLE PRECISION DD(NCB,NRC,*),UPS(NDIM,0:*),UOLDPS(NDIM,0:*),RLOLD(NCB)
@@ -375,7 +377,7 @@
              DO IB=0,NCOL
                 WPLOC(IB)=WP(IB,IC)/DTM(J)
              ENDDO
-             CALL SBVFUN(NDIM,NCOL,NCB,NCA,FUNI,AP,PRM,ICP,    &
+             CALL SBVFUN(NDIM,NCOL,NCB,NCA,FUNI,AC,PRM,ICP,    &
                   AA(1,IC1,J),BB(1,IC1,J),FA(IC1,J),UPS(1,JJ), &
                   UOLDPS(1,JJ),UPOLDP(1,JJ),WPLOC,WT(0,IC),DFDU,DFDP, &
                   U,UOLD,F,IFST,NLLV)
@@ -396,7 +398,7 @@
 !     
 !     Integral constraints+pseudo-arclength equation :
 !     
-            CALL SBVICN(NDIM,NINT,NCB,NCA,ICNI,AP,PRM,ICP,            &
+            CALL SBVICN(NDIM,NINT,NCB,NCA,ICNI,AC%AP,PRM,ICP,            &
                  CC(K1,1,J),DD(1,1,J),FC(1,J),UPS(1,J1),UOLDPS(1,J1), &
                  UDOTPS(1,J1),UPOLDP(1,J1),DTM(J),THU,WI(K),FICD,DICD,&
                  U,UOLD,UID,UIP,IFST,NLLV)
@@ -421,14 +423,15 @@
       END SUBROUTINE SUBVPA
 
 !     ---------- ---------
-      SUBROUTINE SBVFUN(NDIM,NCOL,NCB,NCA,FUNI,AP,PAR,ICP,            &
+      SUBROUTINE SBVFUN(NDIM,NCOL,NCB,NCA,FUNI,AC,PAR,ICP,            &
        AA,BB,FA,UPS,UOLDPS,UPOLDP,WPLOC,WT,DFDU,DFDP,U,UOLD,F,IFST,NLLV)
 
 !     Does one call to FUNI and stores the result in AA, BB, and FA.
 
       include 'interfaces.h'
 
-      TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+      TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+      TYPE(AUTOPARAMETERS), POINTER :: AP
       INTEGER, INTENT(IN) :: NDIM,NCOL,NCB,NCA,ICP(*)
       INTEGER, INTENT(IN) :: IFST,NLLV
       DOUBLE PRECISION, INTENT(INOUT) :: PAR(*)
@@ -443,12 +446,14 @@
       DOUBLE PRECISION WTTMP
       INTEGER I,IB,IB1,J,K
 
+      AP=>AC%AP
+
       DO K=1,NDIM
          U(K)=DOT_PRODUCT(WT(:),UPS(K,:))
          UOLD(K)=DOT_PRODUCT(WT(:),UOLDPS(K,:))
          UOLD(NDIM+NCB+K)=DOT_PRODUCT(WT(:),UPOLDP(K,:))
       ENDDO
-      CALL FUNI(AP,NDIM,U,UOLD,ICP,PAR,IFST*2,F,DFDU,DFDP)
+      CALL FUNI(AC,NDIM,U,UOLD,ICP,PAR,IFST*2,F,DFDU,DFDP)
       IF(IFST.EQ.1)THEN
          DO I=1,NDIM
 !     use U instead of DFDU in inner loop to better utilize the CPU cache

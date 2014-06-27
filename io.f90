@@ -6,7 +6,7 @@
 
 MODULE IO
 
-  USE AUTO_CONSTANTS, ONLY: AUTOPARAMETERS
+  USE AUTO_TYPES, ONLY: AUTOCONTEXT,AUTOPARAMETERS
 
   IMPLICIT NONE
   PRIVATE
@@ -28,7 +28,7 @@ CONTAINS
 
 ! ------------- -------- -------
   CHARACTER(13) FUNCTION getname(is, ind)
-    USE AUTO_CONSTANTS, ONLY: INDEXSTR
+    USE AUTO_TYPES, ONLY: INDEXSTR
     TYPE(INDEXSTR), INTENT(IN) :: is(:)
     INTEGER, INTENT(IN) :: ind
     INTEGER i
@@ -43,12 +43,11 @@ CONTAINS
   END FUNCTION getname
 
 ! ---------- -----
-  SUBROUTINE READC(UNITC,EOF,LINE,NPOS,STR,KEYEND,POS,LISTLEN,IERR)
+  SUBROUTINE READC(AC,UNITC,EOF,LINE,NPOS,STR,KEYEND,POS,LISTLEN,IERR)
 
 ! Reads the file of continuation constants
 
-    USE AUTO_CONSTANTS
-
+    TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
     INTEGER, INTENT(IN) :: UNITC
     LOGICAL, INTENT(OUT) :: EOF
     INTEGER, INTENT(INOUT) :: LINE
@@ -90,11 +89,11 @@ CONTAINS
              IERR=0
              EOF=.TRUE.
           ELSEIF(IERR==-1)THEN
-             CALL READOLDC(UNITC,N,EOF,LINE,IERR)
+             CALL READOLDC(AC,UNITC,N,EOF,LINE,IERR)
           ENDIF
           RETURN
        ENDIF
-       NEWCFILE=.TRUE.
+       AC%NEWCFILE=.TRUE.
        READ(UNITC,'(A)',IOSTAT=ios) STR(2:)
        IF(ios/=0)THEN
           EOF=.TRUE.
@@ -144,53 +143,53 @@ CONTAINS
           READ(STR(POS:),*,ERR=3)IC
           SELECT CASE(I)
           CASE(1)
-             NDIM=IC
+             AC%NDIM=IC
           CASE(2)
-             IPS=IC
+             AC%IPS=IC
           CASE(3)
-             ILP=IC
+             AC%ILP=IC
           CASE(4)
-             NTST=IC
+             AC%NTST=IC
           CASE(5)
-             NCOL=IC
+             AC%NCOL=IC
           CASE(6)
-             IAD=IC
+             AC%IAD=IC
           CASE(7)
-             IADS=IC
+             AC%IADS=IC
           CASE(8)
-             ISP=IC
+             AC%ISP=IC
           CASE(9)
-             ISW=IC
+             AC%ISW=IC
           CASE(10)
-             IPLT=IC
+             AC%IPLT=IC
           CASE(11)
-             NBC=IC
+             AC%NBC=IC
           CASE(12)
-             NINT=IC
+             AC%NINT=IC
           CASE(13)
-             NMX=IC
+             AC%NMX=IC
           CASE(14)
-             NPR=IC
+             AC%NPR=IC
           CASE(15)
-             MXBF=IC
+             AC%MXBF=IC
           CASE(16)
-             IID=IC
+             AC%IID=IC
           CASE(17)
-             ITMX=IC
+             AC%ITMX=IC
           CASE(18)
-             ITNW=IC
+             AC%ITNW=IC
           CASE(19)
-             NWTN=IC
+             AC%NWTN=IC
           CASE(20)
-             JAC=IC
+             AC%JAC=IC
           CASE(21)
-             NPAR=IC
+             AC%NPAR=IC
           CASE(22)
-             IBR=IC
+             AC%IBR=IC
           CASE(23)
-             LAB=IC
+             AC%LAB=IC
           CASE(24)
-             IIS=IC
+             AC%IIS=IC
           END SELECT
           RETURN
        ENDIF
@@ -200,54 +199,54 @@ CONTAINS
           READ(STR(POS:),*,ERR=3)RC
           SELECT CASE(I)
           CASE(1)
-             DS=RC
+             AC%DS=RC
           CASE(2)
-             DSMIN=RC
+             AC%DSMIN=RC
           CASE(3)
-             DSMAX=RC
+             AC%DSMAX=RC
           CASE(4)
-             RL0=RC
+             AC%RL0=RC
           CASE(5)
-             RL1=RC
+             AC%RL1=RC
           CASE(6)
-             A0=RC
+             AC%A0=RC
           CASE(7)
-             A1=RC
+             AC%A1=RC
           CASE(8)
-             EPSL=RC
+             AC%EPSL=RC
           CASE(9)
-             EPSU=RC
+             AC%EPSU=RC
           CASE(10)
-             EPSS=RC
+             AC%EPSS=RC
           END SELECT
           RETURN
        ENDIF
     ENDDO
     SELECT CASE(STR(1:KEYEND))
     CASE('IRS')
-       READ(STR(POS:),*,ERR=3)SIRS
-       READ(SIRS,*,IOSTAT=ios)IRS
-       IF(ios/=0)IRS=1
+       READ(STR(POS:),*,ERR=3)AC%SIRS
+       READ(AC%SIRS,*,IOSTAT=ios)AC%IRS
+       IF(ios/=0)AC%IRS=1
     CASE('ICP')
        NICP=LISTLEN
-       DEALLOCATE(ICU)
-       ALLOCATE(ICU(NICP))
-       READ(STR(POS:),*,ERR=3)ICU            
+       DEALLOCATE(AC%ICU)
+       ALLOCATE(AC%ICU(NICP))
+       READ(STR(POS:),*,ERR=3)AC%ICU            
     CASE('UZR','UZSTOP')
        ALLOCATE(IVUZRS(LISTLEN))
        READ(STR(POS:),*,ERR=3)IVUZRS
        IF(STR(1:KEYEND)=='UZSTOP')THEN
-          DO I=1,SIZE(IVUZSTOP)
-             DEALLOCATE(IVUZSTOP(I)%VAR)
+          DO I=1,SIZE(AC%IVUZSTOP)
+             DEALLOCATE(AC%IVUZSTOP(I)%VAR)
           ENDDO
-          DEALLOCATE(IVUZSTOP)
-          ALLOCATE(IVUZSTOP(LISTLEN))
+          DEALLOCATE(AC%IVUZSTOP)
+          ALLOCATE(AC%IVUZSTOP(LISTLEN))
        ELSE
-          DO I=1,SIZE(IVUZR)
-             DEALLOCATE(IVUZR(I)%VAR)
+          DO I=1,SIZE(AC%IVUZR)
+             DEALLOCATE(AC%IVUZR(I)%VAR)
           ENDDO
-          DEALLOCATE(IVUZR)
-          ALLOCATE(IVUZR(LISTLEN))
+          DEALLOCATE(AC%IVUZR)
+          ALLOCATE(AC%IVUZR(LISTLEN))
        ENDIF
        DO I=1,LISTLEN
           PREV=' '
@@ -260,64 +259,64 @@ CONTAINS
              PREV=C
           ENDDO
           IF(STR(1:KEYEND)=='UZSTOP')THEN
-             ALLOCATE(IVUZSTOP(I)%VAR(LISTLEN2))
-             IVUZSTOP(I)%INDEX=IVUZRS(I)%INDEX
-             READ(IVUZRS(I)%STRL,*,ERR=3)IVUZSTOP(I)%VAR
+             ALLOCATE(AC%IVUZSTOP(I)%VAR(LISTLEN2))
+             AC%IVUZSTOP(I)%INDEX=IVUZRS(I)%INDEX
+             READ(IVUZRS(I)%STRL,*,ERR=3)AC%IVUZSTOP(I)%VAR
           ELSE
-             ALLOCATE(IVUZR(I)%VAR(LISTLEN2))
-             IVUZR(I)%INDEX=IVUZRS(I)%INDEX
-             READ(IVUZRS(I)%STRL,*,ERR=3)IVUZR(I)%VAR
+             ALLOCATE(AC%IVUZR(I)%VAR(LISTLEN2))
+             AC%IVUZR(I)%INDEX=IVUZRS(I)%INDEX
+             READ(IVUZRS(I)%STRL,*,ERR=3)AC%IVUZR(I)%VAR
           ENDIF
        ENDDO
        DEALLOCATE(IVUZRS)
     CASE('THL')
-       IF(ALLOCATED(IVTHL))DEALLOCATE(IVTHL)
-       ALLOCATE(IVTHL(LISTLEN))
-       READ(STR(POS:),*,ERR=3)IVTHL
+       IF(ALLOCATED(AC%IVTHL))DEALLOCATE(AC%IVTHL)
+       ALLOCATE(AC%IVTHL(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%IVTHL
     CASE('THU')
-       DEALLOCATE(IVTHU)
-       ALLOCATE(IVTHU(LISTLEN))
-       READ(STR(POS:),*,ERR=3)IVTHU
+       DEALLOCATE(AC%IVTHU)
+       ALLOCATE(AC%IVTHU(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%IVTHU
     CASE('SP')
-       IF(ALLOCATED(SP))DEALLOCATE(SP)
-       ALLOCATE(SP(LISTLEN))
-       READ(STR(POS:),*,ERR=3)SP
+       IF(ALLOCATED(AC%SP))DEALLOCATE(AC%SP)
+       ALLOCATE(AC%SP(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%SP
     CASE('STOP')
-       IF(ALLOCATED(STOPS))DEALLOCATE(STOPS)
-       ALLOCATE(STOPS(LISTLEN))
-       READ(STR(POS:),*,ERR=3)STOPS
+       IF(ALLOCATED(AC%STOPS))DEALLOCATE(AC%STOPS)
+       ALLOCATE(AC%STOPS(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%STOPS
     CASE('PAR')
-       IF(ALLOCATED(PARVALS))DEALLOCATE(PARVALS)
-       ALLOCATE(PARVALS(LISTLEN))
-       READ(STR(POS:),*,ERR=3)PARVALS
+       IF(ALLOCATED(AC%PARVALS))DEALLOCATE(AC%PARVALS)
+       ALLOCATE(AC%PARVALS(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%PARVALS
     CASE('U')
-       IF(ALLOCATED(UVALS))DEALLOCATE(UVALS)
-       ALLOCATE(UVALS(LISTLEN))
-       READ(STR(POS:),*,ERR=3)UVALS
+       IF(ALLOCATED(AC%UVALS))DEALLOCATE(AC%UVALS)
+       ALLOCATE(AC%UVALS(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%UVALS
     CASE('parnames')
-       IF(ALLOCATED(parnames))DEALLOCATE(parnames)
-       ALLOCATE(parnames(LISTLEN))
-       READ(STR(POS:),*,ERR=3)parnames
+       IF(ALLOCATED(AC%parnames))DEALLOCATE(AC%parnames)
+       ALLOCATE(AC%parnames(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%parnames
     CASE('unames')
-       IF(ALLOCATED(unames))DEALLOCATE(unames)
-       ALLOCATE(unames(LISTLEN))
-       READ(STR(POS:),*,ERR=3)unames
+       IF(ALLOCATED(AC%unames))DEALLOCATE(AC%unames)
+       ALLOCATE(AC%unames(LISTLEN))
+       READ(STR(POS:),*,ERR=3)AC%unames
     CASE('s')
-       READ(STR(POS:),*)SFILE
-       IF(TRIM(SFILE)=='/')THEN
+       READ(STR(POS:),*)AC%SFILE
+       IF(TRIM(AC%SFILE)=='/')THEN
           ! special case from Python interface: s='/' is followed on
           ! the next lines by the solution
           EOF=.TRUE.
           RETURN
        ENDIF
     CASE('dat')
-       READ(STR(POS:),*)DATFILE
+       READ(STR(POS:),*)AC%DATFILE
     CASE('sv')
-       READ(STR(POS:),*)SVFILE
+       READ(STR(POS:),*)AC%SVFILE
     CASE('e')
-       READ(STR(POS:),*)EFILE
+       READ(STR(POS:),*)AC%EFILE
     CASE('TY')
-       READ(STR(POS:),*,ERR=3)TY
+       READ(STR(POS:),*,ERR=3)AC%TY
     CASE DEFAULT
        IERR=1
     END SELECT
@@ -453,11 +452,11 @@ CONTAINS
   END FUNCTION READINTEGER
 
 ! ---------- --------
-  SUBROUTINE READOLDC(UNITC,N,EOF,LINE,IERR)
+  SUBROUTINE READOLDC(AC,UNITC,N,EOF,LINE,IERR)
 
 ! Reads the continuation constants in the old format
-    USE AUTO_CONSTANTS
-
+    
+    TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
     INTEGER I
     INTEGER NUZR,NICP
     INTEGER LISTLEN,ios
@@ -468,63 +467,63 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: LINE
     INTEGER, INTENT(OUT) :: IERR
 
-    NDIM=N
-    READ(UNITC,*,ERR=3,END=4) IPS,SIRS,ILP
-    READ(SIRS,*,IOSTAT=ios)IRS
-    IF(ios/=0)IRS=1
+    AC%NDIM=N
+    READ(UNITC,*,ERR=3,END=4) AC%IPS,AC%SIRS,AC%ILP
+    READ(AC%SIRS,*,IOSTAT=ios)AC%IRS
+    IF(ios/=0)AC%IRS=1
     LINE=LINE+1
     LISTLEN=READINTEGER(UNITC,C,IERR)
     IF(IERR==0.OR.IERR==3)GOTO 3
     IF(IERR==4)GOTO 4
-    DEALLOCATE(ICU)
+    DEALLOCATE(AC%ICU)
     NICP=LISTLEN
     IF(LISTLEN==0)NICP=1
-    ALLOCATE(ICU(NICP))
-    ICU(1)='1'
-    READ(UNITC,*,ERR=3,END=4) (ICU(I),I=1,LISTLEN)
+    ALLOCATE(AC%ICU(NICP))
+    AC%ICU(1)='1'
+    READ(UNITC,*,ERR=3,END=4) (AC%ICU(I),I=1,LISTLEN)
     LINE=LINE+1
-    READ(UNITC,*,ERR=3,END=4) NTST,NCOL,IAD,ISP,ISW,IPLT,NBC,NINT
+    READ(UNITC,*,ERR=3,END=4) AC%NTST,AC%NCOL,AC%IAD,AC%ISP,AC%ISW,AC%IPLT,AC%NBC,AC%NINT
     LINE=LINE+1
-    READ(UNITC,*,ERR=3,END=4) NMX,RL0,RL1,A0,A1
+    READ(UNITC,*,ERR=3,END=4) AC%NMX,AC%RL0,AC%RL1,AC%A0,AC%A1
     LINE=LINE+1
-    READ(UNITC,*,ERR=3,END=4) NPR,MXBF,IID,ITMX,ITNW,NWTN,JAC
+    READ(UNITC,*,ERR=3,END=4) AC%NPR,AC%MXBF,AC%IID,AC%ITMX,AC%ITNW,AC%NWTN,AC%JAC
     LINE=LINE+1
-    READ(UNITC,*,ERR=3,END=4) EPSL,EPSU,EPSS
+    READ(UNITC,*,ERR=3,END=4) AC%EPSL,AC%EPSU,AC%EPSS
     LINE=LINE+1
-    READ(UNITC,*,ERR=3,END=4) DS,DSMIN,DSMAX,IADS
+    READ(UNITC,*,ERR=3,END=4) AC%DS,AC%DSMIN,AC%DSMAX,AC%IADS
     LINE=LINE+1
     READ(UNITC,*,ERR=3,END=4) LISTLEN
     !allocate: no THL vs. non-allocated:default THL (in SUB. INIT1)
-    IF(ALLOCATED(IVTHL))DEALLOCATE(IVTHL)
-    ALLOCATE(IVTHL(LISTLEN))
+    IF(ALLOCATED(AC%IVTHL))DEALLOCATE(AC%IVTHL)
+    ALLOCATE(AC%IVTHL(LISTLEN))
     IF(LISTLEN>0)THEN
        DO I=1,LISTLEN
           LINE=LINE+1
-          READ(UNITC,*,ERR=3,END=4)IVTHL(I)
+          READ(UNITC,*,ERR=3,END=4)AC%IVTHL(I)
        ENDDO
     ENDIF
     LINE=LINE+1
     READ(UNITC,*,ERR=3,END=4) LISTLEN
     IF(LISTLEN>0)THEN
-       DEALLOCATE(IVTHU)
-       ALLOCATE(IVTHU(LISTLEN))
+       DEALLOCATE(AC%IVTHU)
+       ALLOCATE(AC%IVTHU(LISTLEN))
        DO I=1,LISTLEN
           LINE=LINE+1
-          READ(UNITC,*,ERR=3,END=4)IVTHU(I)
+          READ(UNITC,*,ERR=3,END=4)AC%IVTHU(I)
        ENDDO
     ENDIF
     LINE=LINE+1
     READ(UNITC,*,ERR=3,END=4)NUZR
     IF(NUZR>0)THEN
-       DO I=1,SIZE(IVUZR)
-          DEALLOCATE(IVUZR(I)%VAR)
+       DO I=1,SIZE(AC%IVUZR)
+          DEALLOCATE(AC%IVUZR(I)%VAR)
        ENDDO
-       DEALLOCATE(IVUZR)
-       ALLOCATE(IVUZR(NUZR))
+       DEALLOCATE(AC%IVUZR)
+       ALLOCATE(AC%IVUZR(NUZR))
        DO I=1,NUZR
           LINE=LINE+1
-          ALLOCATE(IVUZR(I)%VAR(1))
-          READ(UNITC,*,ERR=3,END=4)IVUZR(I)%INDEX,IVUZR(I)%VAR(1)
+          ALLOCATE(AC%IVUZR(I)%VAR(1))
+          READ(UNITC,*,ERR=3,END=4)AC%IVUZR(I)%INDEX,AC%IVUZR(I)%VAR(1)
        ENDDO
     ENDIF
     IERR=-1
@@ -540,14 +539,10 @@ CONTAINS
   END SUBROUTINE READOLDC
     
 ! ---------- ----
-  SUBROUTINE STHD(AP,ICP)
+  SUBROUTINE STHD(AC,ICP)
 
     USE COMPAT
     USE SUPPORT, ONLY: LBTYPE
-    USE AUTO_CONSTANTS, ONLY : IVTHL, IVTHU, IVUZR, IVUZSTOP, unames, parnames,&
-         NDIM, IRS, ILP, ISP, ISW, NBC, NINT, NMX, DS, DSMIN, DSMAX, ICU,&
-         EFILE, SVFILE, SFILE, DATFILE, HCONST, NPAR, UVALS, PARVALS, SP, &
-         STOPS, IBR, LAB, TY
 
 ! Write the values of the user defined parameters on unit 7.
 ! This identifying information is preceded by a '   0' on each line.
@@ -555,7 +550,8 @@ CONTAINS
 ! limits of the bifurcation diagram, viz. RL0,RL1,A0 and A1.
 ! These are often convenient for an initial plot of the diagram.
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     CHARACTER (LEN=*), PARAMETER :: D3 = "('   0',3(A8,ES11.4))"
     CHARACTER (LEN=*), PARAMETER :: I4 = "('   0',4(A8,I4))"
@@ -571,6 +567,8 @@ CONTAINS
 
     INTEGER ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV
     COMMON /BLHOM/ ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV
+
+    AP=>AC%AP
 
     NDIMA=AP%NDIM
     IPS=AP%IPS
@@ -619,110 +617,110 @@ CONTAINS
     WRITE(7,I5)' NMX=',NMXA, 'NPR=', NPR, 'MXBF=',MXBF,'IID =',IID, 'IADS=',IADS
     WRITE(7,I6)'ITMX=',ITMX,'ITNW=',ITNW,'NWTN=',NWTN,'JAC =',JAC,'  NUZR=',NUZR
 
-    IF(IBR>0.OR.LAB>0.OR.LEN_TRIM(TY)>0.OR.IIS<3)THEN
+    IF(AC%IBR>0.OR.AC%LAB>0.OR.LEN_TRIM(AC%TY)>0.OR.IIS<3)THEN
        WRITE(7,"('   0')",ADVANCE="NO")
        IF(IIS<3)THEN
           WRITE(7,"(A8,I4)",ADVANCE="NO")"IIS =",IIS
        ENDIF
-       IF(IBR>0)THEN
-          WRITE(7,"(A8,I4)",ADVANCE="NO")"IBR =",IBR
+       IF(AC%IBR>0)THEN
+          WRITE(7,"(A8,I4)",ADVANCE="NO")"IBR =",AC%IBR
        ENDIF
-       IF(LAB>0)THEN
-          WRITE(7,"(A8,I4)",ADVANCE="NO")"LAB =",LAB
+       IF(AC%LAB>0)THEN
+          WRITE(7,"(A8,I4)",ADVANCE="NO")"LAB =",AC%LAB
        ENDIF
-       IF(LEN_TRIM(TY)>0)THEN
-          WRITE(7,"(A9,A,A)",ADVANCE="NO")"TY = '",TRIM(TY),"'"
+       IF(LEN_TRIM(AC%TY)>0)THEN
+          WRITE(7,"(A9,A,A)",ADVANCE="NO")"TY = '",TRIM(AC%TY),"'"
        ENDIF
        WRITE(7,*)
     ENDIF
     WRITE(7,"(A,I4,A)",ADVANCE="NO")"   0   NPAR=",NPARA
-    CALL WRITELIST("   THL = ",IVTHL)
-    CALL WRITELIST("    THU = ",IVTHU)
+    CALL WRITELIST("   THL = ",AC%IVTHL)
+    CALL WRITELIST("    THU = ",AC%IVTHU)
     WRITE(7,*)
-    IF(SIZE(IVUZR)>0)THEN
-       CALL WRITEUZRLIST("   0   UZR = ",IVUZR)
+    IF(SIZE(AC%IVUZR)>0)THEN
+       CALL WRITEUZRLIST("   0   UZR = ",AC%IVUZR)
        WRITE(7,*)
     ENDIF
-    IF(SIZE(IVUZSTOP)>0)THEN
-       CALL WRITEUZRLIST("   0   UZSTOP = ",IVUZSTOP)
+    IF(SIZE(AC%IVUZSTOP)>0)THEN
+       CALL WRITEUZRLIST("   0   UZSTOP = ",AC%IVUZSTOP)
        WRITE(7,*)
     ENDIF
     IF(IPS==9)THEN
        !homcont constants
        WRITE(7,"('   0   ',2(A,I4),2(A8,I2),(A8,I4))") &
             'NUNSTAB=',NUNSTAB,' NSTAB=',NSTAB,&
-            'IEQUIB=',HCONST%IEQUIB,'ITWIST=',HCONST%ITWIST,&
+            'IEQUIB=',AC%HCONST%IEQUIB,'ITWIST=',AC%HCONST%ITWIST,&
             'ISTART=',ISTART
-       IF(SIZE(HCONST%IREV)>0.OR.SIZE(HCONST%IFIXED)>0.OR.&
-            SIZE(HCONST%IPSI)>0)THEN
+       IF(SIZE(AC%HCONST%IREV)>0.OR.SIZE(AC%HCONST%IFIXED)>0.OR.&
+            SIZE(AC%HCONST%IPSI)>0)THEN
           WRITE(7,"('   0  ')",ADVANCE='NO')
-          CALL WRITEINTLIST(" IREV=",HCONST%IREV)
-          CALL WRITEINTLIST(" IFIXED=",HCONST%IFIXED)
-          CALL WRITEINTLIST(" IPSI=",HCONST%IPSI)
+          CALL WRITEINTLIST(" IREV=",AC%HCONST%IREV)
+          CALL WRITEINTLIST(" IFIXED=",AC%HCONST%IFIXED)
+          CALL WRITEINTLIST(" IPSI=",AC%HCONST%IPSI)
           WRITE(7,*)
        ENDIF
     ENDIF
-    LE=LEN_TRIM(EFILE)
-    LSV=LEN_TRIM(SVFILE)
-    LS=LEN_TRIM(SFILE)
-    LDAT=LEN_TRIM(DATFILE)
+    LE=LEN_TRIM(AC%EFILE)
+    LSV=LEN_TRIM(AC%SVFILE)
+    LS=LEN_TRIM(AC%SFILE)
+    LDAT=LEN_TRIM(AC%DATFILE)
     IF(LE>0.OR.LSV>0.OR.LS>0.OR.LDAT>0)THEN
        WRITE(7,"('   0  ')",ADVANCE="NO")
        IF(LE>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" e = '",TRIM(EFILE),"'"
+          WRITE(7,"(A,A,A)",ADVANCE="NO")" e = '",TRIM(AC%EFILE),"'"
        ENDIF
        IF(LS>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" s = '",TRIM(SFILE),"'"
+          WRITE(7,"(A,A,A)",ADVANCE="NO")" s = '",TRIM(AC%SFILE),"'"
        ENDIF
        IF(LDAT>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" dat = '",TRIM(DATFILE),"'"
+          WRITE(7,"(A,A,A)",ADVANCE="NO")" dat = '",TRIM(AC%DATFILE),"'"
        ENDIF
        IF(LSV>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" sv = '",TRIM(SVFILE),"'"
+          WRITE(7,"(A,A,A)",ADVANCE="NO")" sv = '",TRIM(AC%SVFILE),"'"
        ENDIF
        WRITE(7,*)
     ENDIF
-    IF(SIZE(parnames)>0)THEN
-       CALL WRITESTRLIST("   0   parnames = ",parnames)
+    IF(SIZE(AC%parnames)>0)THEN
+       CALL WRITESTRLIST("   0   parnames = ",AC%parnames)
        WRITE(7,*)
     ENDIF
-    IF(SIZE(unames)>0)THEN
-       CALL WRITESTRLIST("   0   unames   = ",unames)
+    IF(SIZE(AC%unames)>0)THEN
+       CALL WRITESTRLIST("   0   unames   = ",AC%unames)
        WRITE(7,*)
     ENDIF
-    IF(SIZE(PARVALS)>0)THEN
-       CALL WRITELIST("   0   PAR     = ",PARVALS)
+    IF(SIZE(AC%PARVALS)>0)THEN
+       CALL WRITELIST("   0   PAR     = ",AC%PARVALS)
        WRITE(7,*)
     ENDIF
-    IF(SIZE(UVALS)>0)THEN
-       CALL WRITELIST("   0   U       = ",UVALS)
+    IF(SIZE(AC%UVALS)>0)THEN
+       CALL WRITELIST("   0   U       = ",AC%UVALS)
        WRITE(7,*)
     ENDIF
-    IF(SIZE(SP)>0)THEN
-       WRITE(7,"(A,A,A)", ADVANCE="NO")"   0   SP=['",TRIM(SP(1)),"'"
-       DO I=2,SIZE(SP)
-          WRITE(7,"(A,A,A)", ADVANCE="NO")", '",TRIM(SP(I)),"'"
+    IF(SIZE(AC%SP)>0)THEN
+       WRITE(7,"(A,A,A)", ADVANCE="NO")"   0   SP=['",TRIM(AC%SP(1)),"'"
+       DO I=2,SIZE(AC%SP)
+          WRITE(7,"(A,A,A)", ADVANCE="NO")", '",TRIM(AC%SP(I)),"'"
        ENDDO
        WRITE(7,"(A)")']'
     ENDIF
-    IF(SIZE(STOPS)>0)THEN
-       WRITE(7,"(A,A,A)", ADVANCE="NO")"   0   STOP=['",TRIM(STOPS(1)),"'"
-       DO I=2,SIZE(STOPS)
-          WRITE(7,"(A,A,A)", ADVANCE="NO")", '",TRIM(STOPS(I)),"'"
+    IF(SIZE(AC%STOPS)>0)THEN
+       WRITE(7,"(A,A,A)", ADVANCE="NO")"   0   STOP=['",TRIM(AC%STOPS(1)),"'"
+       DO I=2,SIZE(AC%STOPS)
+          WRITE(7,"(A,A,A)", ADVANCE="NO")", '",TRIM(AC%STOPS(I)),"'"
        ENDDO
        WRITE(7,"(A)")']'
     ENDIF
 
-    WRITE(SDS,    "(ES11.4)")DS
+    WRITE(SDS,    "(ES11.4)")AC%DS
     WRITE(SDSA,   "(ES11.4)")DSA
-    WRITE(SDSMIN, "(ES11.4)")DSMIN
+    WRITE(SDSMIN, "(ES11.4)")AC%DSMIN
     WRITE(SDSMINA,"(ES11.4)")DSMINA
-    WRITE(SDSMAX, "(ES11.4)")DSMAX
+    WRITE(SDSMAX, "(ES11.4)")AC%DSMAX
     WRITE(SDSMAXA,"(ES11.4)")DSMAXA
 
     IF(SDS/=SDSA.OR.SDSMIN/=SDSMINA.OR.SDSMAX/=SDSMAXA.OR. &
-       NDIM/=NDIMA.OR.IRS/=IRSA.OR.ILP/=ILPA.OR.NPAR/=NPARA.OR. &
-       NMX/=NMXA.OR.ISP/=ISPA.OR.ISW/=ISWA.OR.NBC/=NBCA.OR.NINT/=NINTA)THEN
+       AC%NDIM/=NDIMA.OR.AC%IRS/=IRSA.OR.AC%ILP/=ILPA.OR.AC%NPAR/=NPARA.OR. &
+       AC%NMX/=NMXA.OR.AC%ISP/=ISPA.OR.AC%ISW/=ISWA.OR.AC%NBC/=NBCA.OR.AC%NINT/=NINTA)THEN
        WRITE(7,"('   0   User-specified constants, where different from above:')")
        IF(SDS/=SDSA.OR.SDSMIN/=SDSMINA.OR.SDSMAX/=SDSMAXA)THEN
           WRITE(7,"('   0')", ADVANCE="NO")
@@ -737,70 +735,70 @@ CONTAINS
           ENDIF
           WRITE(7,*)
        ENDIF
-       IF(NDIM/=NDIMA.OR.IRS/=IRSA.OR.ILP/=ILPA.OR.NPAR/=NPARA)THEN
+       IF(AC%NDIM/=NDIMA.OR.AC%IRS/=IRSA.OR.AC%ILP/=ILPA.OR.AC%NPAR/=NPARA)THEN
           WRITE(7,"('   0')", ADVANCE="NO")
-          IF(NDIM/=NDIMA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NDIM=',NDIM
+          IF(AC%NDIM/=NDIMA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'NDIM=',AC%NDIM
           ENDIF
-          IF(IRS/=IRSA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'IRS =',IRS
+          IF(AC%IRS/=IRSA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'IRS =',AC%IRS
           ENDIF
-          IF(ILP/=ILPA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'ILP =',ILP
+          IF(AC%ILP/=ILPA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'ILP =',AC%ILP
           ENDIF
-          IF(NPAR/=NPARA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NPAR=',NPAR
+          IF(AC%NPAR/=NPARA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'NPAR=',AC%NPAR
           ENDIF
           WRITE(7,*)
        ENDIF
-       IF(NMX/=NMXA.OR.ISP/=ISPA.OR.ISW/=ISWA.OR.NBC/=NBCA.OR.NINT/=NINTA)THEN
+       IF(AC%NMX/=NMXA.OR.AC%ISP/=ISPA.OR.AC%ISW/=ISWA.OR.AC%NBC/=NBCA.OR.AC%NINT/=NINTA)THEN
           WRITE(7,"('   0')", ADVANCE="NO")
-          IF(NMX/=NMXA)THEN
-             WRITE(7, "(A7,I5)", ADVANCE="NO")'NMX=',NMX
+          IF(AC%NMX/=NMXA)THEN
+             WRITE(7, "(A7,I5)", ADVANCE="NO")'NMX=',AC%NMX
           ENDIF
-          IF(ISP/=ISPA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'ISP =',ISP
+          IF(AC%ISP/=ISPA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'ISP =',AC%ISP
           ENDIF
-          IF(ISW/=ISWA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'ISW =',ISW
+          IF(AC%ISW/=ISWA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'ISW =',AC%ISW
           ENDIF
-          IF(NBC/=NBCA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NBC =',NBC
+          IF(AC%NBC/=NBCA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'NBC =',AC%NBC
           ENDIF
-          IF(NINT/=NINTA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NINT=',NINT
+          IF(AC%NINT/=NINTA)THEN
+             WRITE(7, "(A8,I4)", ADVANCE="NO")'NINT=',AC%NINT
           ENDIF
           WRITE(7,*)
        ENDIF
     ENDIF
-    IF(IPS==9.AND.(NUNSTAB/=HCONST%NUNSTAB.OR.NSTAB/=HCONST%NSTAB.OR. &
-         ISTART/=HCONST%ISTART))THEN
+    IF(IPS==9.AND.(NUNSTAB/=AC%HCONST%NUNSTAB.OR.NSTAB/=AC%HCONST%NSTAB.OR. &
+         ISTART/=AC%HCONST%ISTART))THEN
        !homcont constants
        WRITE(7,"('   0   ')", ADVANCE="NO")
-       IF(NUNSTAB/=HCONST%NUNSTAB)THEN
-          WRITE(7,"(A,I4)", ADVANCE="NO")'NUNSTAB=',HCONST%NUNSTAB
+       IF(NUNSTAB/=AC%HCONST%NUNSTAB)THEN
+          WRITE(7,"(A,I4)", ADVANCE="NO")'NUNSTAB=',AC%HCONST%NUNSTAB
        ENDIF
-       IF(NSTAB/=HCONST%NSTAB)THEN
-          WRITE(7,"(A,I4)", ADVANCE="NO")' NSTAB=',HCONST%NSTAB
+       IF(NSTAB/=AC%HCONST%NSTAB)THEN
+          WRITE(7,"(A,I4)", ADVANCE="NO")' NSTAB=',AC%HCONST%NSTAB
        ENDIF
-       IF(ISTART/=HCONST%ISTART)THEN
-          WRITE(7,"(A8,I4)", ADVANCE="NO")'ISTART=',HCONST%ISTART
+       IF(ISTART/=AC%HCONST%ISTART)THEN
+          WRITE(7,"(A8,I4)", ADVANCE="NO")'ISTART=',AC%HCONST%ISTART
        ENDIF
        WRITE(7,*)
     ENDIF
 
     WRITE(7,"('   0   User-specified parameter')",ADVANCE="NO")
-    IF(SIZE(ICU).EQ.1)THEN
+    IF(SIZE(AC%ICU).EQ.1)THEN
        WRITE(7,"(':       ')",ADVANCE="NO")
     ELSE
        WRITE(7,"('s:      ')",ADVANCE="NO")
     ENDIF
-    DO I=1,SIZE(ICU)
-       READ(ICU(I),*,IOSTAT=io)INDX
+    DO I=1,SIZE(AC%ICU)
+       READ(AC%ICU(I),*,IOSTAT=io)INDX
        IF(io==0)THEN
-          WRITE(7,"(3X,A)",ADVANCE="NO")TRIM(ICU(I))
+          WRITE(7,"(3X,A)",ADVANCE="NO")TRIM(AC%ICU(I))
        ELSE
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" '",TRIM(ICU(I)),"'"
+          WRITE(7,"(A,A,A)",ADVANCE="NO")" '",TRIM(AC%ICU(I)),"'"
        ENDIF
     ENDDO
     WRITE(7,"(/'   0   Active continuation parameter')",ADVANCE="NO")
@@ -810,7 +808,7 @@ CONTAINS
        WRITE(7,"('s: ')",ADVANCE="NO")
     ENDIF
     DO I=1,NFPR
-       name = getname(parnames, ICP(I))
+       name = getname(AC%parnames, ICP(I))
        IF (LEN_TRIM(name)>0) THEN
           WRITE(7,"(A,A,A)",ADVANCE="NO")" '",TRIM(name),"'"
        ELSE
@@ -830,7 +828,7 @@ CONTAINS
   CONTAINS
 
     SUBROUTINE WRITELIST(NAME,IVLIST)
-      USE AUTO_CONSTANTS, ONLY: INDEXVAR
+      USE AUTO_TYPES, ONLY: INDEXVAR
       CHARACTER(LEN=*), INTENT(IN) :: NAME
       TYPE(INDEXVAR), INTENT(IN) :: IVLIST(:)
       
@@ -862,7 +860,7 @@ CONTAINS
     END SUBROUTINE WRITELIST
 
     SUBROUTINE WRITEUZRLIST(NAME,IVLIST)
-      USE AUTO_CONSTANTS, ONLY: INDEXMVAR
+      USE AUTO_TYPES, ONLY: INDEXMVAR
       CHARACTER(LEN=*), INTENT(IN) :: NAME
       TYPE(INDEXMVAR), INTENT(IN) :: IVLIST(:)
       
@@ -901,7 +899,7 @@ CONTAINS
     END SUBROUTINE WRITEUZRLIST
 
     SUBROUTINE WRITESTRLIST(NAME,ISLIST)
-      USE AUTO_CONSTANTS, ONLY: INDEXSTR
+      USE AUTO_TYPES, ONLY: INDEXSTR
       CHARACTER(LEN=*), INTENT(IN) :: NAME
       TYPE(INDEXSTR), INTENT(IN) :: ISLIST(:)
       
@@ -921,7 +919,7 @@ CONTAINS
     END SUBROUTINE WRITESTRLIST
 
     SUBROUTINE WRITEINTLIST(NAME,ILIST)
-      USE AUTO_CONSTANTS, ONLY: INDEXVAR
+      USE AUTO_TYPES, ONLY: INDEXVAR
       CHARACTER(LEN=*), INTENT(IN) :: NAME
       INTEGER, INTENT(IN) :: ILIST(:)
       
@@ -943,24 +941,23 @@ CONTAINS
   END SUBROUTINE STHD
 
 ! ---------- ------
-  SUBROUTINE HEADNG(AP,ICP,IUNIT,N1,N2)
+  SUBROUTINE HEADNG(AC,ICP,IUNIT,N1,N2)
 
     USE COMPAT
-    USE AUTO_CONSTANTS, ONLY : unames, parnames
 
 ! Prints headings above columns on unit 6, 7, and 9.
 ! N1 = number of parameters to print (maximum: 7 for screen output)
 ! N2 = number of (max) variables to print (maximum: max(0,7-N1,7))
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN) :: AC
     INTEGER, INTENT(IN) :: ICP(*),IUNIT,N1,N2
 ! Local
     INTEGER I,J,IPS,IPLT,NDM
     CHARACTER(LEN=13) name
 
-    IPS=AP%IPS
-    IPLT=AP%IPLT
-    NDM=AP%NDM
+    IPS=AC%AP%IPS
+    IPLT=AC%AP%IPLT
+    NDM=AC%AP%NDM
 
     IF(IUNIT.EQ.7)THEN
        WRITE(7,"(I4/I4,A)",ADVANCE="NO")0,0,'    PT  TY  LAB '
@@ -972,7 +969,7 @@ CONTAINS
        IF(J==1.OR.J>N2+2)THEN
           I=1
           IF(J>1)I=J-N2-1
-          name = getname(parnames, ICP(I))
+          name = getname(AC%parnames, ICP(I))
           IF(LEN_TRIM(name)>0)THEN
              CALL WRITECOL(-1,name)
           ELSEIF(ICP(I)==11.AND.IPS>0.AND.IPS/=4.AND.IPS/=7)THEN
@@ -987,7 +984,7 @@ CONTAINS
        ELSEIF(J==2.AND.(IPLT==0.OR.IPLT<-NDM.OR.IPLT>3*NDM))THEN
           CALL WRITECOL(4,'L2-NORM')
        ELSEIF(J==2)THEN
-          name = getname(unames, MOD(ABS(IPLT)-1,NDM)+1)
+          name = getname(AC%unames, MOD(ABS(IPLT)-1,NDM)+1)
           IF(LEN_TRIM(name)>0)THEN
              IF(IPLT>NDM.AND.IPLT<=2*NDM) THEN
                 CALL WRITECOL(-1, 'INTEGRAL ' // name)
@@ -1018,7 +1015,7 @@ CONTAINS
              ENDIF
           ENDIF
        ELSE !J>2 with N2>0
-          name = getname(unames, J-2)
+          name = getname(AC%unames, J-2)
           IF(LEN_TRIM(name)>0)THEN
              IF(ABS(IPS)<=1.OR.IPS==5.OR.IPS==11)THEN
                 CALL WRITECOL(-1,name)
@@ -1069,14 +1066,14 @@ CONTAINS
   END SUBROUTINE HEADNG
 
 ! ---------- ------
-  SUBROUTINE WRLINE(AP,PAR,ICU,IBR,NTOT,LAB,VAXIS,U)
+  SUBROUTINE WRLINE(AC,PAR,ICU,IBR,NTOT,LAB,VAXIS,U)
 
     USE COMPAT
     USE SUPPORT, ONLY: LBTYPE
 
 ! Write one line of output on unit 6 and 7.
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN) :: AC
     INTEGER, INTENT(IN) :: ICU(*),IBR,NTOT,LAB
     DOUBLE PRECISION, INTENT(IN) :: PAR(*),U(*),VAXIS
 ! Local
@@ -1085,9 +1082,9 @@ CONTAINS
     CHARACTER(31) :: F7  ! (I4,I6,I4,I5,**********ES19.10)
     INTEGER MTOT,NDM,ITP,NICP,N1,N2,I
 
-    NDM=AP%NDM
-    ITP=AP%ITP
-    NICP=AP%NICP
+    NDM=AC%AP%NDM
+    ITP=AC%AP%ITP
+    NICP=AC%AP%NICP
 
     N1=NICP
     N2=NDM
@@ -1101,9 +1098,9 @@ CONTAINS
 
 ! Write a heading above the first line.
 
-    IF(ABS(NTOT).EQ.1)CALL HEADNG(AP,ICU,6,N1,N2)
-    IF(ABS(NTOT).EQ.1)CALL HEADNG(AP,ICU,7,NICP,N2)
-    IF(AP%IID>0)CALL HEADNG(AP,ICU,9,N1,N2)
+    IF(ABS(NTOT).EQ.1)CALL HEADNG(AC,ICU,6,N1,N2)
+    IF(ABS(NTOT).EQ.1)CALL HEADNG(AC,ICU,7,NICP,N2)
+    IF(AC%AP%IID>0)CALL HEADNG(AC,ICU,9,N1,N2)
 
     ATYPE=ADJUSTR(LBTYPE(ITP))
 
@@ -1122,7 +1119,7 @@ CONTAINS
     WRITE(7,F7)IBR,MTOT,ITP,LAB,PAR(ICU(1)),VAXIS, &
          (U(I),I=1,N2),(PAR(ICU(I)),I=2,NICP)
     CALL AUTOFLUSH(7)
-    IF(AP%IID>0)WRITE(9,F69)IBR,MTOT,ATYPE,LAB,PAR(ICU(1)),VAXIS, &
+    IF(AC%AP%IID>0)WRITE(9,F69)IBR,MTOT,ATYPE,LAB,PAR(ICU(1)),VAXIS, &
          (U(I),I=1,N2),(PAR(ICU(I)),I=2,N1)
   END SUBROUTINE WRLINE
 
@@ -1138,29 +1135,32 @@ CONTAINS
   END SUBROUTINE WRBAR
 
 ! ---------- ------
-  SUBROUTINE NEWLAB(AP)
+  SUBROUTINE NEWLAB(AC)
 
 ! Determine a suitable label when restarting.
 
-    USE AUTO_CONSTANTS, ONLY: IBR
-    TYPE(AUTOPARAMETERS), INTENT(INOUT) :: AP
+
+    TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
 
     INTEGER IPS,IRS,ISW,ITP
+    INTEGER IBR
 
-    IPS=AP%IPS
-    IRS=AP%IRS
-    ISW=AP%ISW
-    ITP=AP%ITP
+    IPS=AC%AP%IPS
+    IRS=AC%AP%IRS
+    ISW=AC%AP%ISW
+    ITP=AC%AP%ITP
+    
+    IBR=AC%IBR
 
-    IF(AP%LAB.EQ.0)AP%LAB=MLAB+1
+    IF(AC%AP%LAB.EQ.0)AC%AP%LAB=MLAB+1
     IF(IBR.NE.0)RETURN
     IF(ISW.LT.0.OR.IRS.EQ.0)THEN
-       AP%IBR=MBR+1
+       AC%AP%IBR=MBR+1
     ELSEIF( (ABS(ITP).LT.10.AND.ABS(ISW).EQ.2) &
          .OR. ((IPS.EQ.2.OR.IPS.EQ.12).AND.ITP.EQ.3) &
          .OR. (IPS.EQ.4.AND.ISW.EQ.2.AND.ABS(ITP).LT.10) &
          .OR. (IPS.EQ.5.AND.MOD(ITP,10).EQ.2) )THEN
-       AP%IBR=IRS
+       AC%AP%IBR=IRS
     ENDIF
 
   END SUBROUTINE NEWLAB
@@ -1191,12 +1191,11 @@ CONTAINS
   END FUNCTION GETIPS3
 
 ! ---------- ------
-  SUBROUTINE FINDLB(AP,UNITC,IRS,NFPR,NPAR,FOUND)
+  SUBROUTINE FINDLB(AC,UNITC,IRS,NFPR,NPAR,FOUND)
 
-    USE AUTO_CONSTANTS, ONLY: SIRS, SFILE
     USE SUPPORT, ONLY: LBTYPE, AUTOSTOP
 
-    TYPE(AUTOPARAMETERS), INTENT(INOUT) :: AP
+    TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
     INTEGER, INTENT(IN) :: UNITC
     INTEGER, INTENT(INOUT) :: IRS
     INTEGER, INTENT(OUT) :: NFPR,NPAR
@@ -1216,17 +1215,17 @@ CONTAINS
     FOUND=.FALSE.
     NFPR=0
     NPAR=0
-    ISW=AP%ISW
+    ISW=AC%AP%ISW
 
     UNIT=3
     ios=0
-    IF(LEN_TRIM(SFILE)==0)THEN
+    IF(LEN_TRIM(AC%SFILE)==0)THEN
        OPEN(UNIT,FILE='fort.3',STATUS='old',ACCESS='sequential',IOSTAT=ios)
-    ELSEIF(TRIM(SFILE)=='/')THEN
-       SFILE=''
+    ELSEIF(TRIM(AC%SFILE)=='/')THEN
+       AC%SFILE=''
        UNIT=UNITC
     ELSE
-       OPEN(UNIT,FILE='s.'//SFILE,STATUS='old',ACCESS='sequential',IOSTAT=ios)
+       OPEN(UNIT,FILE='s.'//AC%SFILE,STATUS='old',ACCESS='sequential',IOSTAT=ios)
     ENDIF
     IF(ios/=0)THEN
        WRITE(6,'(A,A)')'The solution file (fort.3 or s. file) ',&
@@ -1234,11 +1233,11 @@ CONTAINS
        CALL AUTOSTOP()
     ENDIF
     I=0
-    J=SCAN(SIRS,"-0123456789")
+    J=SCAN(AC%SIRS,"-0123456789")
     number=0
     IF(J>2)THEN
-       ATYPE=SIRS(1:J-1)
-       READ(SIRS(J:),'(I11)',IOSTAT=ios)number
+       ATYPE=AC%SIRS(1:J-1)
+       READ(AC%SIRS(J:),'(I11)',IOSTAT=ios)number
        IF(ios/=0)THEN
           number=0
        ENDIF
@@ -1269,8 +1268,8 @@ CONTAINS
           NFPR=NFPRR
           NPAR=NPARR
           FOUND=.TRUE.
-          IF(AP%ITP==0)AP%ITP=ITP
-          IF(AP%IBR==0)AP%IBR=IBR
+          IF(AC%AP%ITP==0)AC%AP%ITP=ITP
+          IF(AC%AP%IBR==0)AC%AP%IBR=IBR
           IF(ABS(ISW).GE.2)THEN
              IF(ABS(ITP).LT.10)THEN
                 ITPST=ABS(ITP)
@@ -1280,7 +1279,7 @@ CONTAINS
           ELSE
              ITPST=0
           ENDIF
-          AP%ITPST=ITPST
+          AC%AP%ITPST=ITPST
           CALL READSOL(UNIT,IBR,NTOT,ITP,LAB,NFPR,ISWR,NTPL,NAR,NROWPR,NTST,&
                NCOL,NPAR,NPARI,NDM,IPS,IPRIV)
           ! strip internal parameters from returned NPAR so they can
@@ -1377,26 +1376,25 @@ CONTAINS
   END SUBROUTINE NEWSOL
 
 ! ---------- ------
-  SUBROUTINE READLB(AP,ICPRS,U,UDOT,PAR)
+  SUBROUTINE READLB(AC,ICPRS,U,UDOT,PAR)
 
-    USE AUTO_CONSTANTS, ONLY: UVALS, PARVALS, unames, parnames
     USE SUPPORT, ONLY: NAMEIDX
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN) :: AC
     INTEGER, INTENT(OUT) :: ICPRS(*)
     DOUBLE PRECISION, INTENT(OUT) :: U(*),UDOT(*),PAR(*)
 
     DOUBLE PRECISION, ALLOCATABLE :: UX(:),P(:)
     INTEGER I,NFPR,NPARR,NPAR,NDIM,NDM,NDMRD
 
-    NPAR=AP%NPAR
-    NDM=AP%NDM
-    IF(AP%IPS==11)NDM=NDM/2
+    NPAR=AC%AP%NPAR
+    NDM=AC%AP%NDM
+    IF(AC%AP%IPS==11)NDM=NDM/2
 
 ! Reads the restart data for algebraic problems.
 
     NFPR=CURSOL%NFPR
     NPARR=CURSOL%NPAR
-    NDIM=MIN(CURSOL%NAR-1,AP%NDIM)
+    NDIM=MIN(CURSOL%NAR-1,AC%AP%NDIM)
     U(1:NDIM)=CURSOL%UPS(1:NDIM,0)
     IF(CURSOL%NTST>0)THEN
        ICPRS(1:NFPR)=CURSOL%ICP(1:NFPR)
@@ -1408,11 +1406,11 @@ CONTAINS
 
 ! override parameter/point values with values from constants file
 
-    DO I=1,SIZE(UVALS)
-       U(NAMEIDX(UVALS(I)%INDEX,unames))=UVALS(I)%VAR
+    DO I=1,SIZE(AC%UVALS)
+       U(NAMEIDX(AC%UVALS(I)%INDEX,AC%unames))=AC%UVALS(I)%VAR
     ENDDO
-    DO I=1,SIZE(PARVALS)
-       PAR(NAMEIDX(PARVALS(I)%INDEX,parnames))=PARVALS(I)%VAR
+    DO I=1,SIZE(AC%PARVALS)
+       PAR(NAMEIDX(AC%PARVALS(I)%INDEX,AC%parnames))=AC%PARVALS(I)%VAR
     ENDDO
 
     NDMRD=CURSOL%NDM
@@ -1442,13 +1440,12 @@ CONTAINS
   END SUBROUTINE READLB
 
 ! ---------- ------
-  SUBROUTINE READBV(AP,PAR,ICPRS,NTSRS,NCOLRS,NDIMRD,RLDOTRS,UPS, &
+  SUBROUTINE READBV(AC,PAR,ICPRS,NTSRS,NCOLRS,NDIMRD,RLDOTRS,UPS, &
        UDOTPS,TM,ITPRS,NDIM)
 
-    USE AUTO_CONSTANTS, ONLY: PARVALS, parnames
     USE SUPPORT, ONLY: NAMEIDX
     INTEGER, INTENT(IN) :: NDIM
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN) :: AC
     INTEGER, INTENT(OUT) :: ICPRS(*),NTSRS,NCOLRS,NDIMRD,ITPRS
     DOUBLE PRECISION, INTENT(OUT) :: RLDOTRS(*),UPS(NDIM,0:*),UDOTPS(NDIM,0:*)
     DOUBLE PRECISION, INTENT(OUT) :: TM(0:*),PAR(*)
@@ -1456,11 +1453,11 @@ CONTAINS
     INTEGER I,J,N,NFPR,NFPRS,NPARR,NPARIR,NPAR,NPARI,NDM,NDMRD
     DOUBLE PRECISION, ALLOCATABLE :: U(:),P(:)
 
-    NPARI=AP%NPARI
-    NFPR=AP%NFPR
-    NPAR=AP%NPAR
-    NDM=AP%NDM
-    IF(AP%IPS==12)NDM=NDM/2
+    NPARI=AC%AP%NPARI
+    NFPR=AC%AP%NFPR
+    NPAR=AC%AP%NPAR
+    NDM=AC%AP%NDM
+    IF(AC%AP%IPS==12)NDM=NDM/2
     ITPRS=CURSOL%ITP
     NFPRS=CURSOL%NFPR
     NTSRS=CURSOL%NTST
@@ -1507,8 +1504,8 @@ CONTAINS
 
 ! override parameter values with values from constants file
 
-    DO I=1,SIZE(PARVALS)
-       PAR(NAMEIDX(PARVALS(I)%INDEX,parnames))=PARVALS(I)%VAR
+    DO I=1,SIZE(AC%PARVALS)
+       PAR(NAMEIDX(AC%PARVALS(I)%INDEX,AC%parnames))=AC%PARVALS(I)%VAR
     ENDDO
 
     NDMRD=CURSOL%NDM

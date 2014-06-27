@@ -66,6 +66,7 @@ equilibrium: HMACH
 homcont: a bunch of global variables
 homcont.f90: global vars are used throughout all routines, some of 		them in COMMON blocks :(
 main.f90: AUTOI:EVERYTHING
+STHD in support.f90 has a common block
 
 io: ROOTSOL, CURSOL, MBR, MLAB
 	variables never appear outside io.f90

@@ -6,7 +6,7 @@
 !-----------------------------------------------------------------------
 MODULE TOOLBOXBV
 
-  USE AUTO_CONSTANTS, ONLY : AUTOPARAMETERS
+  USE AUTO_TYPES, ONLY : AUTOCONTEXT, AUTOPARAMETERS
   USE INTERFACES
   USE BVP
   USE SUPPORT
@@ -215,24 +215,26 @@ CONTAINS
   END SUBROUTINE STPNBV1
 
 ! ---------- ------
-  SUBROUTINE STPNUB(AP,PAR,RLDOT,UPS,UDOTPS,TM,NODIR)
+  SUBROUTINE STPNUB(AC,PAR,RLDOT,UPS,UDOTPS,TM,NODIR)
 
     USE MESH
-    USE AUTO_CONSTANTS, ONLY : DATFILE, UVALS, PARVALS, unames, parnames
     USE SUPPORT, ONLY: NAMEIDX, AUTOSTOP
 
 ! Generates a starting point for the continuation of a branch of
 ! of solutions to general boundary value problems by calling the user
 ! supplied subroutine STPNT where an analytical solution is given.
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(OUT) :: NODIR
-    DOUBLE PRECISION, INTENT(OUT) :: PAR(*),RLDOT(AP%NFPR)
-    DOUBLE PRECISION, INTENT(OUT) :: TM(0:*),UPS(AP%NDIM,0:*),UDOTPS(AP%NDIM,0:*)
+    DOUBLE PRECISION, INTENT(OUT) :: PAR(*),RLDOT(AC%AP%NFPR)
+    DOUBLE PRECISION, INTENT(OUT) :: TM(0:*),UPS(AC%AP%NDIM,0:*),UDOTPS(AC%AP%NDIM,0:*)
 
     INTEGER NDIM,IPS,NTST,NCOL,ISW,NTSR,ios,I,J
     DOUBLE PRECISION TEMP,PERIOD
     DOUBLE PRECISION, ALLOCATABLE :: TMR(:),UPSR(:,:),UDOTPSR(:,:),U(:)
+
+    AP=>AC%AP
 
     NDIM=AP%NDIM
     IPS=AP%IPS
@@ -244,15 +246,15 @@ CONTAINS
 
     CALL MSH(NTST,TM)
 
-    IF(DATFILE/='')THEN
-       OPEN(3,FILE=TRIM(DATFILE),STATUS='old',ACCESS='sequential',&
+    IF(AC%DATFILE/='')THEN
+       OPEN(3,FILE=TRIM(AC%DATFILE),STATUS='old',ACCESS='sequential',&
             IOSTAT=ios)
        IF(ios/=0)THEN
-          OPEN(3,FILE=TRIM(DATFILE)//'.dat',STATUS='old',&
+          OPEN(3,FILE=TRIM(AC%DATFILE)//'.dat',STATUS='old',&
                ACCESS='sequential',IOSTAT=ios)
        ENDIF
        IF(ios/=0)THEN
-          WRITE(6,"(A,A,A)")'Datafile ',TRIM(DATFILE),' not found.'
+          WRITE(6,"(A,A,A)")'Datafile ',TRIM(AC%DATFILE),' not found.'
           CALL AUTOSTOP()
        ENDIF
        NTSR=-1

@@ -2,7 +2,7 @@
 
 module autompi
 
-use auto_constants, only: autoparameters
+use auto_types, only: autoparameters
 
 implicit none
 private
