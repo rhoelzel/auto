@@ -310,7 +310,7 @@ CONTAINS
              IBR=AP%IBR
              NTOP=MOD(NTOT-1,9999)+1
              DSMAX=AP%DSMAX
-             CALL ADPTDS(NITPS,ITNW,IBR,NTOP,AP%IID,DSMAX,RDS)
+             CALL ADPTDS(AC,NITPS,ITNW,IBR,NTOP,AP%IID,DSMAX,RDS)
              AP%RDS=RDS
           ENDIF
        ENDIF
@@ -459,7 +459,7 @@ CONTAINS
 ! Maximum number of iterations reached.
 
        IF(IADS.EQ.0)THEN
-          IF(IID>0)WRITE(9,101)IBR,NTOP
+          IF(IID>0)WRITE(AC%DUNIT,101)IBR,NTOP
           EXIT
        ENDIF
 
@@ -467,14 +467,14 @@ CONTAINS
 
        DSMAX=AP%DSMAX
        NITPS=ITNW
-       CALL ADPTDS(NITPS,ITNW,IBR,NTOP,IID,DSMAX,RDS)
+       CALL ADPTDS(AC,NITPS,ITNW,IBR,NTOP,IID,DSMAX,RDS)
        AP%RDS=RDS
        IF(ABS(RDS).LT.DSMIN)THEN
           ! Minimum stepsize reached.
-          IF(IID>0)WRITE(9,103)IBR,NTOP
+          IF(IID>0)WRITE(AC%DUNIT,103)IBR,NTOP
           EXIT
        ENDIF
-       IF(IID.GE.2)WRITE(9,102)IBR,NTOP
+       IF(IID.GE.2)WRITE(AC%DUNIT,102)IBR,NTOP
     ENDDO
 
 ! Minimum stepsize reached.
@@ -546,7 +546,7 @@ CONTAINS
 ! Write additional output on unit 9 if requested.
 
     NITPS=0
-    CALL WRTBV9(AP,RLCUR,NDIM,UPS,TM,DTM,THU,NITPS)
+    CALL WRTBV9(AC,RLCUR,NDIM,UPS,TM,DTM,THU,NITPS)
 
 ! Generate the Jacobian matrix and the right hand side.
 
@@ -585,7 +585,7 @@ CONTAINS
           ENDDO
        ENDDO
 
-       CALL WRTBV9(AP,RLCUR,NDIM,UPS,TM,DTM,THU,NITPS)
+       CALL WRTBV9(AC,RLCUR,NDIM,UPS,TM,DTM,THU,NITPS)
 
 ! Check whether user-supplied error tolerances have been met :
 
@@ -616,7 +616,7 @@ CONTAINS
           ENDIF
 
           CALL PVLI(AC,ICP,UPS,NDIM,PAR,FNCI)
-          IF(IID.GE.2)WRITE(9,*)
+          IF(IID.GE.2)WRITE(AC%DUNIT,*)
           DEALLOCATE(DUPS,DRL)
           CONVERGED=.TRUE.
           RETURN
@@ -930,9 +930,9 @@ CONTAINS
     ENDIF
 
     IF(IID.GE.2)THEN
-       WRITE(9,101)
+       WRITE(AC%DUNIT,101)
        DO I=1,NFPR 
-          WRITE(9,102)ICP(I),RLDOT(I)
+          WRITE(AC%DUNIT,102)ICP(I),RLDOT(I)
        ENDDO
     ENDIF
 
@@ -1029,7 +1029,7 @@ CONTAINS
        ! bifurcations override UZ.
        IF(MOD(AP%ITP,10)==-4.AND.LEN_TRIM(ATYPE)>0.AND.TRIM(ATYPE)/='UZ')THEN
           Q=0.d0
-          IF(IID>0)WRITE(9,102)RDS
+          IF(IID>0)WRITE(AC%DUNIT,102)RDS
           RETURN
        ENDIF
        Q1=0.d0
@@ -1055,7 +1055,7 @@ CONTAINS
     RRDS=ABS(RDS)/(1+SQRT(ABS(DS*DSMAX)))
     IF(RRDS.LT.EPSS) THEN
        Q=0.d0
-       IF(IID>0)WRITE(9,102)RDS
+       IF(IID>0)WRITE(AC%DUNIT,102)RDS
        RETURN
     ENDIF
 
@@ -1085,7 +1085,7 @@ CONTAINS
 ! If requested write additional output on unit 9 :
 
        IF(IID.GE.2)THEN
-          WRITE(9,101)NITSP1,RDS
+          WRITE(AC%DUNIT,101)NITSP1,RDS
        ENDIF
 
        CALL CONTBV(AC,DSOLD,PAR,ICP,FUNI,RLCUR,RLOLD,RLDOT, &
@@ -1113,7 +1113,7 @@ CONTAINS
        RRDS=ABS(RDS)/(1+SQRT(ABS(DS*DSMAX)))
        IF(RRDS.LT.EPSS) THEN
           Q=0.d0
-          IF(IID>0)WRITE(9,102)RDS
+          IF(IID>0)WRITE(AC%DUNIT,102)RDS
           DEALLOCATE(UPSS,RLCURS,UOLDPSS,RLOLDS,UDOTPSS,RLDOTS,P0S,P1S)
           STEPPED=.TRUE.
           RETURN
@@ -1121,7 +1121,7 @@ CONTAINS
 
     ENDDO
 
-    IF(IID>0)WRITE(9,103)IBR,NTOP+1
+    IF(IID>0)WRITE(AC%DUNIT,103)IBR,NTOP+1
     ATYPE=''
     ! set back to previous (converged) state
     UPS(:,:)=UPSS(:,:)
@@ -1392,7 +1392,7 @@ CONTAINS
        NROWPR=NROWPR + (NFPR+19)/20 + (NFPR+6)/7 + ((NDIM+6)/7)*NTPL
     ENDIF
     MTOT=MOD(NTOT-1,9999)+1
-    WRITE(8,101)IBR,MTOT,ITP,LAB,NFPR,ISW,NTPL,NAR,NROWPR,NTST,NCOL,NPAR, &
+    WRITE(AC%SUNIT,101)IBR,MTOT,ITP,LAB,NFPR,ISW,NTPL,NAR,NROWPR,NTST,NCOL,NPAR, &
          NPARI,AC%NDIM,AC%IPS,0
 
 ! Write the entire solution on unit 8 :
@@ -1404,7 +1404,7 @@ CONTAINS
 !xxx====================================================================
     DO J=0,NTST*NCOL-1
        T=TM(J/NCOL)+MOD(J,NCOL)*DTM(J/NCOL+1)/NCOL
-       WRITE(8,102)T,UPS(:,J)
+       WRITE(AC%SUNIT,102)T,UPS(:,J)
 !xxx====================================================================
 !xxx Test problem
        !xxx er = err(ups(1,j),T)
@@ -1412,7 +1412,7 @@ CONTAINS
        !xxx if(i.eq.1 .and. dabs(er).gt.em)em=dabs(er)
 !xxx====================================================================
     ENDDO
-    WRITE(8,102)1.0d0,UPS(:,NTST*NCOL)
+    WRITE(AC%SUNIT,102)1.0d0,UPS(:,NTST*NCOL)
 !xxx====================================================================
 !xxx Test problem
 ! Write global error and mesh error
@@ -1423,42 +1423,45 @@ CONTAINS
     IF(DIR)THEN
 ! Write the free parameter indices:
 
-       WRITE(8,103)(ICP(I),I=1,NFPR)
+       WRITE(AC%SUNIT,103)(ICP(I),I=1,NFPR)
 
 ! Write the direction of the branch:
 
-       WRITE(8,102)(RLDOT(I),I=1,NFPR)
+       WRITE(AC%SUNIT,102)(RLDOT(I),I=1,NFPR)
        DO J=0,NTST*NCOL
-          WRITE(8,102)UDOTPS(:,J)
+          WRITE(AC%SUNIT,102)UDOTPS(:,J)
        ENDDO
     ENDIF
 
 ! Write the parameter values.
 
-    WRITE(8,102)(PAR(I),I=1,NPAR)
+    WRITE(AC%SUNIT,102)(PAR(I),I=1,NPAR)
 
 101 FORMAT(6I6,I8,I6,I8,7I5)
 102 FORMAT(4X,7ES19.10)
 103 FORMAT(20I5)
 
-    CALL AUTOFLUSH(8)
+    CALL AUTOFLUSH(AC%SUNIT)
   END SUBROUTINE WRTBV8
 
 ! ---------- ------
-  SUBROUTINE WRTBV9(AP,RLCUR,NDIM,UPS,TM,DTM,THU,NITPS)
+  SUBROUTINE WRTBV9(AC,RLCUR,NDIM,UPS,TM,DTM,THU,NITPS)
 
     USE IO
     USE MESH
 
 ! Writes additional output on unit 9.
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM,NITPS
-    DOUBLE PRECISION, INTENT(IN) :: RLCUR(AP%NFPR),DTM(*),UPS(NDIM,0:*)
+    DOUBLE PRECISION, INTENT(IN) :: RLCUR(AC%AP%NFPR),DTM(*),UPS(NDIM,0:*)
     DOUBLE PRECISION, INTENT(IN) :: TM(0:*),THU(*)
 
     INTEGER IAB,NTST,NCOL,IPLT,IID,NDM,IBR,NTOT,J,MTOT
     DOUBLE PRECISION T,AMP
+
+    AP=>AC%AP
 
     NTST=AP%NTST
     NCOL=AP%NCOL
@@ -1473,21 +1476,21 @@ CONTAINS
     IF(IPLT.GT.0.AND.IAB.LE.NDIM)AMP=RMXUPS(NTST,NCOL,NDIM,IAB,UPS)
     IF(IPLT.LT.0.AND.IAB.LE.NDIM)AMP=RMNUPS(NTST,NCOL,NDIM,IAB,UPS)
     IF(IID.GE.2)THEN
-       IF(NITPS.EQ.0)CALL WRBAR("=",47)
+       IF(NITPS.EQ.0)CALL WRBAR(AC,"=",47)
        IF(NITPS.EQ.0 .OR. IID.GE.3)THEN
-          WRITE(9,102)
+          WRITE(AC%DUNIT,102)
        ENDIF
        MTOT=MOD(NTOT-1,9999)+1
-       WRITE(9,103)IBR,MTOT+1,NITPS,RLCUR(1),AMP
+       WRITE(AC%DUNIT,103)IBR,MTOT+1,NITPS,RLCUR(1),AMP
     ENDIF
 
     IF(IID.GE.5)THEN
-       WRITE(9,104)
+       WRITE(AC%DUNIT,104)
        DO J=0,NTST*NCOL-1
           T=TM(J/NCOL)+MOD(J,NCOL)*DTM(J/NCOL+1)/NCOL
-          WRITE(9,105)T,UPS(:,J)
+          WRITE(AC%DUNIT,105)T,UPS(:,J)
        ENDDO
-       WRITE(9,105)1.0d0,UPS(:,NTST*NCOL)
+       WRITE(AC%DUNIT,105)1.0d0,UPS(:,NTST*NCOL)
     ENDIF
 102 FORMAT(/,'  BR    PT  IT         PAR',11X,'L2-NORM')
 103 FORMAT(I4,I6,I4,5X,6ES14.5)

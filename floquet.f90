@@ -61,13 +61,15 @@ MODULE FLOQUET
 
 CONTAINS
 
-  SUBROUTINE FLOWKM (NDIM, P0, P1, IID, EV)
+  SUBROUTINE FLOWKM (AC, NDIM, P0, P1, IID, EV)
 
     !  Subroutine to compute Floquet multipliers via the "deflated circuit 
     !  pencil" method. This routine is called by the AUTO routine FNSPBV
 
     !  Parameter declarations:
 
+    USE AUTO_TYPES, ONLY: AUTOCONTEXT
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: NDIM, IID
     DOUBLE PRECISION, INTENT(IN) :: P0(NDIM, NDIM), P1(NDIM, NDIM)
     COMPLEX(KIND(1.0D0)), INTENT(OUT) :: EV(NDIM)
@@ -130,14 +132,14 @@ CONTAINS
     !  Print the undeflated circuit pencil (C0, C1).
 
     IF(IID>4) THEN
-       WRITE(9,101)
-       WRITE(9,102)
+       WRITE(AC%DUNIT,101)
+       WRITE(AC%DUNIT,102)
        DO I=1,NDIM
-          WRITE(9,104)(C0(I,J),J=1,NDIM)
+          WRITE(AC%DUNIT,104)(C0(I,J),J=1,NDIM)
        ENDDO
-       WRITE(9,103)
+       WRITE(AC%DUNIT,103)
        DO I=1,NDIM
-          WRITE(9,104)(C1(I,J),J=1,NDIM)
+          WRITE(AC%DUNIT,104)(C1(I,J),J=1,NDIM)
        ENDDO
     END IF
 
@@ -209,14 +211,14 @@ CONTAINS
     !  Finished the deflation process! Print the deflated circuit pencil.
 
     IF(IID>4) THEN
-       WRITE(9,105)
-       WRITE(9,106)
+       WRITE(AC%DUNIT,105)
+       WRITE(AC%DUNIT,106)
        DO I=1,NDIM
-          WRITE(9,104)(C0(I,J),J=1,NDIM)
+          WRITE(AC%DUNIT,104)(C0(I,J),J=1,NDIM)
        ENDDO
-       WRITE(9,107)
+       WRITE(AC%DUNIT,107)
        DO I=1,NDIM
-          WRITE(9,104)(C1(I,J),J=1,NDIM)
+          WRITE(AC%DUNIT,104)(C1(I,J),J=1,NDIM)
        ENDDO
     END IF
 

@@ -1987,14 +1987,14 @@ CONTAINS
        ENDIF
 
 !  Compute the Floquet multipliers
-       CALL FLOWKM(NDM, Q0, Q1, IID, EV)
+       CALL FLOWKM(AC,NDM, Q0, Q1, IID, EV)
        DEALLOCATE(Q0,Q1,IR,IRPIV)
     ELSE
        IF(IID.GE.4)THEN
           CALL EVECS(AC,NDIM,P0,P1,.FALSE.)
        ENDIF
 !  Compute the Floquet multipliers
-       CALL FLOWKM(NDM, P0, P1, IID, EV)
+       CALL FLOWKM(AC,NDM, P0, P1, IID, EV)
     ENDIF
 
 ! The algorithm in FLOWKM causes the first multiplier to be closest to z=1.
@@ -2074,11 +2074,11 @@ CONTAINS
        ISP=-ISP
        AP%ISP=ISP
        IF(IID>0)THEN
-          IF(IID.GE.2)WRITE(9,101)ABS(IBR),NTOP+1
+          IF(IID.GE.2)WRITE(AC%DUNIT,101)ABS(IBR),NTOP+1
           DO I=1,NDM
-             WRITE(9,105)ABS(IBR),NTOP+1,I,EV(I)
+             WRITE(AC%DUNIT,105)ABS(IBR),NTOP+1,I,EV(I)
           ENDDO
-          WRITE(9,104)ABS(IBR),NTOP+1,NINS
+          WRITE(AC%DUNIT,104)ABS(IBR),NTOP+1,NINS
        ENDIF
        RETURN
     ENDIF
@@ -2088,13 +2088,13 @@ CONTAINS
 
     IF(ISP.LT.0)THEN
        IF(AMIN.LT.1.0E-2)THEN
-          IF(IID>0)WRITE(9,102)ABS(IBR),NTOP+1
+          IF(IID>0)WRITE(AC%DUNIT,102)ABS(IBR),NTOP+1
           ISP=-ISP
           AP%ISP=ISP
        ELSE
           IF(IID>0)THEN
              DO I=1,NDM
-                WRITE(9,105)ABS(IBR),NTOP+1,I,EV(I),ABS(EV(I))
+                WRITE(AC%DUNIT,105)ABS(IBR),NTOP+1,I,EV(I),ABS(EV(I))
              ENDDO
           ENDIF
           RETURN
@@ -2138,7 +2138,7 @@ CONTAINS
           ENDIF
        ENDIF
     ENDIF
-    IF( LEN_TRIM(ATYPE)>0 .AND. IID>=2 ) WRITE(9,103)ABS(IBR),NTOP+1,D
+    IF( LEN_TRIM(ATYPE)>0 .AND. IID>=2 ) WRITE(AC%DUNIT,103)ABS(IBR),NTOP+1,D
     FNSPBV=D
     AP%SPBF=FNSPBV
 
@@ -2152,12 +2152,12 @@ CONTAINS
     IF(IID>0)THEN
 ! Print the Floquet multipliers.
 
-       WRITE(9,104)ABS(IBR),NTOP+1,NINS
+       WRITE(AC%DUNIT,104)ABS(IBR),NTOP+1,NINS
        DO I=1,NDM
           IF(EV(I)==CMPLX( HUGE(1.0D0), HUGE(1.0D0), KIND(1.0D0) ))THEN
-             WRITE(9,105)ABS(IBR),NTOP+1,I,EV(I),REAL(EV(I))
+             WRITE(AC%DUNIT,105)ABS(IBR),NTOP+1,I,EV(I),REAL(EV(I))
           ELSE
-             WRITE(9,105)ABS(IBR),NTOP+1,I,EV(I),ABS(EV(I))
+             WRITE(AC%DUNIT,105)ABS(IBR),NTOP+1,I,EV(I),ABS(EV(I))
           ENDIF
        ENDDO
     ENDIF
@@ -2299,12 +2299,12 @@ CONTAINS
     CALL DGEEV(JOBVL,JOBVR,NDIM,P,NDIM,WR,WI,Z,NDIM,Z,NDIM,WORK,LWORK,IERR)
     DEALLOCATE(WORK)
 
-    WRITE(9,100)
-    WRITE(9,101)
+    WRITE(AC%DUNIT,100)
+    WRITE(AC%DUNIT,101)
     DO I=1,NDIM
-       WRITE(9,102)WR(I),WI(I),(Z(I,J),J=1,NDIM)
+       WRITE(AC%DUNIT,102)WR(I),WI(I),(Z(I,J),J=1,NDIM)
     ENDDO
-    WRITE(9,101)
+    WRITE(AC%DUNIT,101)
 100 FORMAT(" Multipliers + eigenvectors obtained from - P1^-1 P0 :")
 101 FORMAT(" ")
 102 FORMAT(2ES14.5," | ",8ES14.5)

@@ -696,7 +696,7 @@
       IF(IDB.GT.4.and.IAM.EQ.0)THEN
 !$OMP BARRIER
 !$OMP MASTER
-         CALL PRINT1(NA,NRA,NCA,NCB,NFC,NBC,A,B,C,CDBC,D,DD, &
+         CALL PRINT1(AC,NA,NRA,NCA,NCB,NFC,NBC,A,B,C,CDBC,D,DD, &
            FA,FC,FCFC,IFST,NLLV)
 !$OMP END MASTER
 !$OMP BARRIER
@@ -1458,14 +1458,14 @@
       ENDDO
 !     
       IF(IDB.GE.3)THEN
-         WRITE(9,101)
-         WRITE(9,100)(XE(I),I=1,NCR)
+         WRITE(AC%DUNIT,101)
+         WRITE(AC%DUNIT,100)(XE(I),I=1,NCR)
       ENDIF
 !     
       IF(IDB.GE.4)THEN
-         WRITE(9,102)
+         WRITE(AC%DUNIT,102)
          DO I=1,NCR
-            WRITE(9,100)(E(I,J),J=1,NCR)
+            WRITE(AC%DUNIT,100)(E(I,J),J=1,NCR)
          ENDDO
       ENDIF
 
@@ -1484,8 +1484,8 @@
       ENDIF
 
       IF(IDB.GE.4)THEN
-         WRITE(9,103)
-         WRITE(9,100)(FCC(I),I=1,NCR)
+         WRITE(AC%DUNIT,103)
+         WRITE(AC%DUNIT,100)(FCC(I),I=1,NCR)
       ENDIF
 
 
@@ -1668,8 +1668,10 @@
       END SUBROUTINE INFPAR
 
 !     ---------- ------
-      SUBROUTINE PRINT1(NA,NRA,NCA,NCB,NFC,NBC,A,B,C,CDBC,D,DD,FA, &
+      SUBROUTINE PRINT1(AC,NA,NRA,NCA,NCB,NFC,NBC,A,B,C,CDBC,D,DD,FA, &
        FC,FCFC,IFST,NLLV)
+
+      TYPE(AUTOCONTEXT), INTENT(IN)::AC
 
       INTEGER, INTENT(IN) :: NA,NRA,NCA,NCB,NFC,NBC,IFST,NLLV
       DOUBLE PRECISION A(NCA,NRA,*),B(NCB,NRA,*),C(NCA,NFC-NBC,*)
@@ -1680,35 +1682,35 @@
       DOUBLE PRECISION, ALLOCATABLE :: D1(:)
       DOUBLE PRECISION FC1
 
-       WRITE(9,101)
+       WRITE(AC%DUNIT,101)
        DO I=1,NA
-         WRITE(9,102)I
+         WRITE(AC%DUNIT,102)I
          DO IR=1,NRA
            IF(NLLV==0)THEN
-              WRITE(9,103)(A(IC,IR,I),IC=1,NCA),(B(IC,IR,I),IC=1,NCB),FA(IR,I)
+              WRITE(AC%DUNIT,103)(A(IC,IR,I),IC=1,NCA),(B(IC,IR,I),IC=1,NCB),FA(IR,I)
            ELSE
-              WRITE(9,103)(A(IC,IR,I),IC=1,NCA),(B(IC,IR,I),IC=1,NCB),0d0
+              WRITE(AC%DUNIT,103)(A(IC,IR,I),IC=1,NCA),(B(IC,IR,I),IC=1,NCB),0d0
            ENDIF
          ENDDO
        ENDDO
 
-       WRITE(9,104)
+       WRITE(AC%DUNIT,104)
        DO I=1,NA
-         WRITE(9,102)I
+         WRITE(AC%DUNIT,102)I
          DO IR=1,NFC
            IF(IR.GT.NBC)THEN
-             WRITE(9,103)(C(IC,IR-NBC,I),IC=1,NCA)
+             WRITE(AC%DUNIT,103)(C(IC,IR-NBC,I),IC=1,NCA)
            ELSEIF(I.EQ.1)THEN
-             WRITE(9,103)(CDBC(IC,IR),IC=1,NCA-NRA)
+             WRITE(AC%DUNIT,103)(CDBC(IC,IR),IC=1,NCA-NRA)
            ELSEIF(I.EQ.NA)THEN
-             WRITE(9,103)(CDBC(NCA-NRA+IC,IR),IC=1,NCA-NRA)
+             WRITE(AC%DUNIT,103)(CDBC(NCA-NRA+IC,IR),IC=1,NCA-NRA)
            ENDIF
          ENDDO
        ENDDO
 
-       WRITE(9,105)
+       WRITE(AC%DUNIT,105)
        DO IR=1,NBC
-         WRITE(9,103)(CDBC(2*(NCA-NRA)+IC,IR),IC=1,NCB),FC(IR)
+         WRITE(AC%DUNIT,103)(CDBC(2*(NCA-NRA)+IC,IR),IC=1,NCB),FC(IR)
        ENDDO
        ALLOCATE(D1(NCB))
        DO IR=1,NFC-NBC
@@ -1728,7 +1730,7 @@
          ELSE
             FC1=0
          ENDIF
-         WRITE(9,103)(D1(IC),IC=1,NCB),FC1
+         WRITE(AC%DUNIT,103)(D1(IC),IC=1,NCB),FC1
        ENDDO
        DEALLOCATE(D1)
 

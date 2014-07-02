@@ -609,56 +609,56 @@ CONTAINS
     EPSU=AP%EPSU
     EPSS=AP%EPSS
 
-    WRITE(7,"(I4,' ',4ES12.4)")0,RL0,RL1,A0,A1
-    WRITE(7,D3)'EPSL=',EPSL,'EPSU =',EPSU, 'EPSS =',EPSS
-    WRITE(7,D3)'DS  =',DSA,  'DSMIN=',DSMINA,'DSMAX=',DSMAXA
-    WRITE(7,I4)'NDIM=',NDIMA,'IPS =',IPS, 'IRS =',IRSA, 'ILP =',ILPA
-    WRITE(7,I4)'NTST=',NTST,'NCOL=',NCOL,'IAD =',IAD, 'ISP =',ISPA
-    WRITE(7,I4)'ISW =',ISWA, 'IPLT=',IPLT,'NBC =',NBCA, 'NINT=',NINTA
-    WRITE(7,I5)' NMX=',NMXA, 'NPR=', NPR, 'MXBF=',MXBF,'IID =',IID, 'IADS=',IADS
-    WRITE(7,I6)'ITMX=',ITMX,'ITNW=',ITNW,'NWTN=',NWTN,'JAC =',JAC,'  NUZR=',NUZR
+    WRITE(AC%BUNIT,"(I4,' ',4ES12.4)")0,RL0,RL1,A0,A1
+    WRITE(AC%BUNIT,D3)'EPSL=',EPSL,'EPSU =',EPSU, 'EPSS =',EPSS
+    WRITE(AC%BUNIT,D3)'DS  =',DSA,  'DSMIN=',DSMINA,'DSMAX=',DSMAXA
+    WRITE(AC%BUNIT,I4)'NDIM=',NDIMA,'IPS =',IPS, 'IRS =',IRSA, 'ILP =',ILPA
+    WRITE(AC%BUNIT,I4)'NTST=',NTST,'NCOL=',NCOL,'IAD =',IAD, 'ISP =',ISPA
+    WRITE(AC%BUNIT,I4)'ISW =',ISWA, 'IPLT=',IPLT,'NBC =',NBCA, 'NINT=',NINTA
+    WRITE(AC%BUNIT,I5)' NMX=',NMXA, 'NPR=', NPR, 'MXBF=',MXBF,'IID =',IID, 'IADS=',IADS
+    WRITE(AC%BUNIT,I6)'ITMX=',ITMX,'ITNW=',ITNW,'NWTN=',NWTN,'JAC =',JAC,'  NUZR=',NUZR
 
     IF(AC%IBR>0.OR.AC%LAB>0.OR.LEN_TRIM(AC%TY)>0.OR.IIS<3)THEN
-       WRITE(7,"('   0')",ADVANCE="NO")
+       WRITE(AC%BUNIT,"('   0')",ADVANCE="NO")
        IF(IIS<3)THEN
-          WRITE(7,"(A8,I4)",ADVANCE="NO")"IIS =",IIS
+          WRITE(AC%BUNIT,"(A8,I4)",ADVANCE="NO")"IIS =",IIS
        ENDIF
        IF(AC%IBR>0)THEN
-          WRITE(7,"(A8,I4)",ADVANCE="NO")"IBR =",AC%IBR
+          WRITE(AC%BUNIT,"(A8,I4)",ADVANCE="NO")"IBR =",AC%IBR
        ENDIF
        IF(AC%LAB>0)THEN
-          WRITE(7,"(A8,I4)",ADVANCE="NO")"LAB =",AC%LAB
+          WRITE(AC%BUNIT,"(A8,I4)",ADVANCE="NO")"LAB =",AC%LAB
        ENDIF
        IF(LEN_TRIM(AC%TY)>0)THEN
-          WRITE(7,"(A9,A,A)",ADVANCE="NO")"TY = '",TRIM(AC%TY),"'"
+          WRITE(AC%BUNIT,"(A9,A,A)",ADVANCE="NO")"TY = '",TRIM(AC%TY),"'"
        ENDIF
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
-    WRITE(7,"(A,I4,A)",ADVANCE="NO")"   0   NPAR=",NPARA
+    WRITE(AC%BUNIT,"(A,I4,A)",ADVANCE="NO")"   0   NPAR=",NPARA
     CALL WRITELIST("   THL = ",AC%IVTHL)
     CALL WRITELIST("    THU = ",AC%IVTHU)
-    WRITE(7,*)
+    WRITE(AC%BUNIT,*)
     IF(SIZE(AC%IVUZR)>0)THEN
        CALL WRITEUZRLIST("   0   UZR = ",AC%IVUZR)
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(SIZE(AC%IVUZSTOP)>0)THEN
        CALL WRITEUZRLIST("   0   UZSTOP = ",AC%IVUZSTOP)
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(IPS==9)THEN
        !homcont constants
-       WRITE(7,"('   0   ',2(A,I4),2(A8,I2),(A8,I4))") &
+       WRITE(AC%BUNIT,"('   0   ',2(A,I4),2(A8,I2),(A8,I4))") &
             'NUNSTAB=',NUNSTAB,' NSTAB=',NSTAB,&
             'IEQUIB=',AC%HCONST%IEQUIB,'ITWIST=',AC%HCONST%ITWIST,&
             'ISTART=',ISTART
        IF(SIZE(AC%HCONST%IREV)>0.OR.SIZE(AC%HCONST%IFIXED)>0.OR.&
             SIZE(AC%HCONST%IPSI)>0)THEN
-          WRITE(7,"('   0  ')",ADVANCE='NO')
+          WRITE(AC%BUNIT,"('   0  ')",ADVANCE='NO')
           CALL WRITEINTLIST(" IREV=",AC%HCONST%IREV)
           CALL WRITEINTLIST(" IFIXED=",AC%HCONST%IFIXED)
           CALL WRITEINTLIST(" IPSI=",AC%HCONST%IPSI)
-          WRITE(7,*)
+          WRITE(AC%BUNIT,*)
        ENDIF
     ENDIF
     LE=LEN_TRIM(AC%EFILE)
@@ -666,50 +666,50 @@ CONTAINS
     LS=LEN_TRIM(AC%SFILE)
     LDAT=LEN_TRIM(AC%DATFILE)
     IF(LE>0.OR.LSV>0.OR.LS>0.OR.LDAT>0)THEN
-       WRITE(7,"('   0  ')",ADVANCE="NO")
+       WRITE(AC%BUNIT,"('   0  ')",ADVANCE="NO")
        IF(LE>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" e = '",TRIM(AC%EFILE),"'"
+          WRITE(AC%BUNIT,"(A,A,A)",ADVANCE="NO")" e = '",TRIM(AC%EFILE),"'"
        ENDIF
        IF(LS>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" s = '",TRIM(AC%SFILE),"'"
+          WRITE(AC%BUNIT,"(A,A,A)",ADVANCE="NO")" s = '",TRIM(AC%SFILE),"'"
        ENDIF
        IF(LDAT>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" dat = '",TRIM(AC%DATFILE),"'"
+          WRITE(AC%BUNIT,"(A,A,A)",ADVANCE="NO")" dat = '",TRIM(AC%DATFILE),"'"
        ENDIF
        IF(LSV>0)THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" sv = '",TRIM(AC%SVFILE),"'"
+          WRITE(AC%BUNIT,"(A,A,A)",ADVANCE="NO")" sv = '",TRIM(AC%SVFILE),"'"
        ENDIF
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(SIZE(AC%parnames)>0)THEN
        CALL WRITESTRLIST("   0   parnames = ",AC%parnames)
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(SIZE(AC%unames)>0)THEN
        CALL WRITESTRLIST("   0   unames   = ",AC%unames)
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(SIZE(AC%PARVALS)>0)THEN
        CALL WRITELIST("   0   PAR     = ",AC%PARVALS)
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(SIZE(AC%UVALS)>0)THEN
        CALL WRITELIST("   0   U       = ",AC%UVALS)
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
     IF(SIZE(AC%SP)>0)THEN
-       WRITE(7,"(A,A,A)", ADVANCE="NO")"   0   SP=['",TRIM(AC%SP(1)),"'"
+       WRITE(AC%BUNIT,"(A,A,A)", ADVANCE="NO")"   0   SP=['",TRIM(AC%SP(1)),"'"
        DO I=2,SIZE(AC%SP)
-          WRITE(7,"(A,A,A)", ADVANCE="NO")", '",TRIM(AC%SP(I)),"'"
+          WRITE(AC%BUNIT,"(A,A,A)", ADVANCE="NO")", '",TRIM(AC%SP(I)),"'"
        ENDDO
-       WRITE(7,"(A)")']'
+       WRITE(AC%BUNIT,"(A)")']'
     ENDIF
     IF(SIZE(AC%STOPS)>0)THEN
-       WRITE(7,"(A,A,A)", ADVANCE="NO")"   0   STOP=['",TRIM(AC%STOPS(1)),"'"
+       WRITE(AC%BUNIT,"(A,A,A)", ADVANCE="NO")"   0   STOP=['",TRIM(AC%STOPS(1)),"'"
        DO I=2,SIZE(AC%STOPS)
-          WRITE(7,"(A,A,A)", ADVANCE="NO")", '",TRIM(AC%STOPS(I)),"'"
+          WRITE(AC%BUNIT,"(A,A,A)", ADVANCE="NO")", '",TRIM(AC%STOPS(I)),"'"
        ENDDO
-       WRITE(7,"(A)")']'
+       WRITE(AC%BUNIT,"(A)")']'
     ENDIF
 
     WRITE(SDS,    "(ES11.4)")AC%DS
@@ -722,109 +722,109 @@ CONTAINS
     IF(SDS/=SDSA.OR.SDSMIN/=SDSMINA.OR.SDSMAX/=SDSMAXA.OR. &
        AC%NDIM/=NDIMA.OR.AC%IRS/=IRSA.OR.AC%ILP/=ILPA.OR.AC%NPAR/=NPARA.OR. &
        AC%NMX/=NMXA.OR.AC%ISP/=ISPA.OR.AC%ISW/=ISWA.OR.AC%NBC/=NBCA.OR.AC%NINT/=NINTA)THEN
-       WRITE(7,"('   0   User-specified constants, where different from above:')")
+       WRITE(AC%BUNIT,"('   0   User-specified constants, where different from above:')")
        IF(SDS/=SDSA.OR.SDSMIN/=SDSMINA.OR.SDSMAX/=SDSMAXA)THEN
-          WRITE(7,"('   0')", ADVANCE="NO")
+          WRITE(AC%BUNIT,"('   0')", ADVANCE="NO")
           IF(SDS/=SDSA)THEN
-             WRITE(7, "(A8,A)", ADVANCE="NO")'DS  =',SDS
+             WRITE(AC%BUNIT, "(A8,A)", ADVANCE="NO")'DS  =',SDS
           ENDIF
           IF(SDSMIN/=SDSMINA)THEN
-             WRITE(7, "(A8,A)", ADVANCE="NO")'DSMIN=',SDSMIN
+             WRITE(AC%BUNIT, "(A8,A)", ADVANCE="NO")'DSMIN=',SDSMIN
           ENDIF
           IF(SDSMAX/=SDSMAXA)THEN
-             WRITE(7, "(A8,A)", ADVANCE="NO")'DSMAX=',SDSMAX
+             WRITE(AC%BUNIT, "(A8,A)", ADVANCE="NO")'DSMAX=',SDSMAX
           ENDIF
-          WRITE(7,*)
+          WRITE(AC%BUNIT,*)
        ENDIF
        IF(AC%NDIM/=NDIMA.OR.AC%IRS/=IRSA.OR.AC%ILP/=ILPA.OR.AC%NPAR/=NPARA)THEN
-          WRITE(7,"('   0')", ADVANCE="NO")
+          WRITE(AC%BUNIT,"('   0')", ADVANCE="NO")
           IF(AC%NDIM/=NDIMA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NDIM=',AC%NDIM
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'NDIM=',AC%NDIM
           ENDIF
           IF(AC%IRS/=IRSA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'IRS =',AC%IRS
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'IRS =',AC%IRS
           ENDIF
           IF(AC%ILP/=ILPA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'ILP =',AC%ILP
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'ILP =',AC%ILP
           ENDIF
           IF(AC%NPAR/=NPARA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NPAR=',AC%NPAR
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'NPAR=',AC%NPAR
           ENDIF
-          WRITE(7,*)
+          WRITE(AC%BUNIT,*)
        ENDIF
        IF(AC%NMX/=NMXA.OR.AC%ISP/=ISPA.OR.AC%ISW/=ISWA.OR.AC%NBC/=NBCA.OR.AC%NINT/=NINTA)THEN
-          WRITE(7,"('   0')", ADVANCE="NO")
+          WRITE(AC%BUNIT,"('   0')", ADVANCE="NO")
           IF(AC%NMX/=NMXA)THEN
-             WRITE(7, "(A7,I5)", ADVANCE="NO")'NMX=',AC%NMX
+             WRITE(AC%BUNIT, "(A7,I5)", ADVANCE="NO")'NMX=',AC%NMX
           ENDIF
           IF(AC%ISP/=ISPA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'ISP =',AC%ISP
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'ISP =',AC%ISP
           ENDIF
           IF(AC%ISW/=ISWA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'ISW =',AC%ISW
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'ISW =',AC%ISW
           ENDIF
           IF(AC%NBC/=NBCA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NBC =',AC%NBC
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'NBC =',AC%NBC
           ENDIF
           IF(AC%NINT/=NINTA)THEN
-             WRITE(7, "(A8,I4)", ADVANCE="NO")'NINT=',AC%NINT
+             WRITE(AC%BUNIT, "(A8,I4)", ADVANCE="NO")'NINT=',AC%NINT
           ENDIF
-          WRITE(7,*)
+          WRITE(AC%BUNIT,*)
        ENDIF
     ENDIF
     IF(IPS==9.AND.(NUNSTAB/=AC%HCONST%NUNSTAB.OR.NSTAB/=AC%HCONST%NSTAB.OR. &
          ISTART/=AC%HCONST%ISTART))THEN
        !homcont constants
-       WRITE(7,"('   0   ')", ADVANCE="NO")
+       WRITE(AC%BUNIT,"('   0   ')", ADVANCE="NO")
        IF(NUNSTAB/=AC%HCONST%NUNSTAB)THEN
-          WRITE(7,"(A,I4)", ADVANCE="NO")'NUNSTAB=',AC%HCONST%NUNSTAB
+          WRITE(AC%BUNIT,"(A,I4)", ADVANCE="NO")'NUNSTAB=',AC%HCONST%NUNSTAB
        ENDIF
        IF(NSTAB/=AC%HCONST%NSTAB)THEN
-          WRITE(7,"(A,I4)", ADVANCE="NO")' NSTAB=',AC%HCONST%NSTAB
+          WRITE(AC%BUNIT,"(A,I4)", ADVANCE="NO")' NSTAB=',AC%HCONST%NSTAB
        ENDIF
        IF(ISTART/=AC%HCONST%ISTART)THEN
-          WRITE(7,"(A8,I4)", ADVANCE="NO")'ISTART=',AC%HCONST%ISTART
+          WRITE(AC%BUNIT,"(A8,I4)", ADVANCE="NO")'ISTART=',AC%HCONST%ISTART
        ENDIF
-       WRITE(7,*)
+       WRITE(AC%BUNIT,*)
     ENDIF
 
-    WRITE(7,"('   0   User-specified parameter')",ADVANCE="NO")
+    WRITE(AC%BUNIT,"('   0   User-specified parameter')",ADVANCE="NO")
     IF(SIZE(AC%ICU).EQ.1)THEN
-       WRITE(7,"(':       ')",ADVANCE="NO")
+       WRITE(AC%BUNIT,"(':       ')",ADVANCE="NO")
     ELSE
-       WRITE(7,"('s:      ')",ADVANCE="NO")
+       WRITE(AC%BUNIT,"('s:      ')",ADVANCE="NO")
     ENDIF
     DO I=1,SIZE(AC%ICU)
        READ(AC%ICU(I),*,IOSTAT=io)INDX
        IF(io==0)THEN
-          WRITE(7,"(3X,A)",ADVANCE="NO")TRIM(AC%ICU(I))
+          WRITE(AC%BUNIT,"(3X,A)",ADVANCE="NO")TRIM(AC%ICU(I))
        ELSE
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" '",TRIM(AC%ICU(I)),"'"
+          WRITE(AC%BUNIT,"(A,A,A)",ADVANCE="NO")" '",TRIM(AC%ICU(I)),"'"
        ENDIF
     ENDDO
-    WRITE(7,"(/'   0   Active continuation parameter')",ADVANCE="NO")
+    WRITE(AC%BUNIT,"(/'   0   Active continuation parameter')",ADVANCE="NO")
     IF(NFPR.EQ.1)THEN
-       WRITE(7,"(':  ')",ADVANCE="NO")
+       WRITE(AC%BUNIT,"(':  ')",ADVANCE="NO")
     ELSE
-       WRITE(7,"('s: ')",ADVANCE="NO")
+       WRITE(AC%BUNIT,"('s: ')",ADVANCE="NO")
     ENDIF
     DO I=1,NFPR
        name = getname(AC%parnames, ICP(I))
        IF (LEN_TRIM(name)>0) THEN
-          WRITE(7,"(A,A,A)",ADVANCE="NO")" '",TRIM(name),"'"
+          WRITE(AC%BUNIT,"(A,A,A)",ADVANCE="NO")" '",TRIM(name),"'"
        ELSE
           WRITE(INDSTR,"(I12)")ICP(I)
-          WRITE(7,"(3X,A)",ADVANCE="NO")TRIM(ADJUSTL(INDSTR))
+          WRITE(AC%BUNIT,"(3X,A)",ADVANCE="NO")TRIM(ADJUSTL(INDSTR))
        ENDIF
     ENDDO
-    WRITE(7,*)
+    WRITE(AC%BUNIT,*)
 
     IF(ITPST /= 0)THEN
-       WRITE(7,"('   0   Branch type: ',I2,A,A,A)")&
+       WRITE(AC%BUNIT,"('   0   Branch type: ',I2,A,A,A)")&
             ITPST,"    TY = '",LBTYPE(ITPST),"'"
     ENDIF
 
-    CALL AUTOFLUSH(7)
+    CALL AUTOFLUSH(AC%BUNIT)
 
   CONTAINS
 
@@ -838,10 +838,10 @@ CONTAINS
       INTEGER INDX,io
       CHARACTER(LEN=19) :: VARSTR
 
-      WRITE(7,"(A,A)", ADVANCE="NO")NAME,'{'
+      WRITE(AC%BUNIT,"(A,A)", ADVANCE="NO")NAME,'{'
       FIRST=.TRUE.
       DO I=1,SIZE(IVLIST)
-         IF(.NOT.FIRST)WRITE(7,"(A)", ADVANCE="NO")", "
+         IF(.NOT.FIRST)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")", "
          READ(IVLIST(I)%INDEX,*,IOSTAT=io)INDX
          IF(io==0)THEN
             INDSTR=IVLIST(I)%INDEX
@@ -853,11 +853,11 @@ CONTAINS
          ELSE
             WRITE(VARSTR,'(ES19.10)')IVLIST(I)%VAR
          ENDIF
-         WRITE(7,"(A,A,A)", ADVANCE="NO")TRIM(INDSTR),&
+         WRITE(AC%BUNIT,"(A,A,A)", ADVANCE="NO")TRIM(INDSTR),&
               ": ",TRIM(ADJUSTL(VARSTR))
          FIRST=.FALSE.
       ENDDO
-      WRITE(7,"(A)", ADVANCE="NO")'}'
+      WRITE(AC%BUNIT,"(A)", ADVANCE="NO")'}'
     END SUBROUTINE WRITELIST
 
     SUBROUTINE WRITEUZRLIST(NAME,IVLIST)
@@ -871,32 +871,32 @@ CONTAINS
       CHARACTER(LEN=19) :: VARSTR
       DOUBLE PRECISION V
 
-      WRITE(7,"(A,A)", ADVANCE="NO")NAME,'{'
+      WRITE(AC%BUNIT,"(A,A)", ADVANCE="NO")NAME,'{'
       FIRST=.TRUE.
       DO I=1,SIZE(IVLIST)
-         IF(.NOT.FIRST)WRITE(7,"(A)", ADVANCE="NO")", "
+         IF(.NOT.FIRST)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")", "
          READ(IVLIST(I)%INDEX,*,IOSTAT=io)INDX
          IF(io==0)THEN
             INDSTR=IVLIST(I)%INDEX
          ELSE
             INDSTR="'"//TRIM(IVLIST(I)%INDEX)//"'"
          ENDIF
-         WRITE(7,"(A,A)", ADVANCE="NO")TRIM(INDSTR),": "
-         IF(SIZE(IVLIST(I)%VAR)>1)WRITE(7,"(A)", ADVANCE="NO")'['
+         WRITE(AC%BUNIT,"(A,A)", ADVANCE="NO")TRIM(INDSTR),": "
+         IF(SIZE(IVLIST(I)%VAR)>1)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")'['
          DO J=1,SIZE(IVLIST(I)%VAR)
-            IF(J>1)WRITE(7,"(A)", ADVANCE="NO")", "
+            IF(J>1)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")", "
             V=IVLIST(I)%VAR(J)
             IF(INT(V)==V)THEN
                WRITE(VARSTR,'(I19)')INT(V)
             ELSE
                WRITE(VARSTR,'(ES19.10)')V
             ENDIF
-            WRITE(7,"(A)", ADVANCE="NO")TRIM(ADJUSTL(VARSTR))
+            WRITE(AC%BUNIT,"(A)", ADVANCE="NO")TRIM(ADJUSTL(VARSTR))
          ENDDO
-         IF(SIZE(IVLIST(I)%VAR)>1)WRITE(7,"(A)", ADVANCE="NO")']'
+         IF(SIZE(IVLIST(I)%VAR)>1)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")']'
          FIRST=.FALSE.
       ENDDO
-      WRITE(7,"(A)", ADVANCE="NO")'}'
+      WRITE(AC%BUNIT,"(A)", ADVANCE="NO")'}'
     END SUBROUTINE WRITEUZRLIST
 
     SUBROUTINE WRITESTRLIST(NAME,ISLIST)
@@ -907,16 +907,16 @@ CONTAINS
       LOGICAL FIRST
       CHARACTER(LEN=15) :: INDSTR
 
-      WRITE(7,"(A,A)", ADVANCE="NO")NAME,'{'
+      WRITE(AC%BUNIT,"(A,A)", ADVANCE="NO")NAME,'{'
       FIRST=.TRUE.
       DO I=1,SIZE(ISLIST)
-         IF(.NOT.FIRST)WRITE(7,"(A)", ADVANCE="NO")", "
+         IF(.NOT.FIRST)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")", "
          WRITE(INDSTR,'(I15)')ISLIST(I)%INDEX
-         WRITE(7,"(A,A,A,A)", ADVANCE="NO")TRIM(ADJUSTL(INDSTR)), &
+         WRITE(AC%BUNIT,"(A,A,A,A)", ADVANCE="NO")TRIM(ADJUSTL(INDSTR)), &
               ": '",TRIM(ISLIST(I)%STR),"'"
          FIRST=.FALSE.
       ENDDO
-      WRITE(7,"(A)", ADVANCE="NO")'}'
+      WRITE(AC%BUNIT,"(A)", ADVANCE="NO")'}'
     END SUBROUTINE WRITESTRLIST
 
     SUBROUTINE WRITEINTLIST(NAME,ILIST)
@@ -928,15 +928,15 @@ CONTAINS
       CHARACTER(LEN=12) :: INDSTR
 
       IF (SIZE(ILIST) == 0) RETURN
-      WRITE(7,"(A,A)", ADVANCE="NO")NAME,'['
+      WRITE(AC%BUNIT,"(A,A)", ADVANCE="NO")NAME,'['
       FIRST=.TRUE.
       DO I=1,SIZE(ILIST)
-         IF(.NOT.FIRST)WRITE(7,"(A)", ADVANCE="NO")", "
+         IF(.NOT.FIRST)WRITE(AC%BUNIT,"(A)", ADVANCE="NO")", "
          WRITE(INDSTR,'(I12)')ILIST(I)
-         WRITE(7,"(A)", ADVANCE="NO")TRIM(ADJUSTL(INDSTR))
+         WRITE(AC%BUNIT,"(A)", ADVANCE="NO")TRIM(ADJUSTL(INDSTR))
          FIRST=.FALSE.
       ENDDO
-      WRITE(7,"(A)", ADVANCE="NO")']'
+      WRITE(AC%BUNIT,"(A)", ADVANCE="NO")']'
     END SUBROUTINE WRITEINTLIST
 
   END SUBROUTINE STHD
@@ -961,7 +961,7 @@ CONTAINS
     NDM=AC%AP%NDM
 
     IF(IUNIT.EQ.7)THEN
-       WRITE(7,"(I4/I4,A)",ADVANCE="NO")0,0,'    PT  TY  LAB '
+       WRITE(AC%BUNIT,"(I4/I4,A)",ADVANCE="NO")0,0,'    PT  TY  LAB '
     ELSE
        WRITE(IUNIT,"(/A)",ADVANCE="NO")'  BR    PT  TY  LAB '
     ENDIF
@@ -1117,21 +1117,22 @@ CONTAINS
             (U(I),I=1,N2),(PAR(ICU(I)),I=2,N1)
        CALL AUTOFLUSH(6)
     ENDIF
-    WRITE(7,F7)IBR,MTOT,ITP,LAB,PAR(ICU(1)),VAXIS, &
+    WRITE(AC%BUNIT,F7)IBR,MTOT,ITP,LAB,PAR(ICU(1)),VAXIS, &
          (U(I),I=1,N2),(PAR(ICU(I)),I=2,NICP)
-    CALL AUTOFLUSH(7)
-    IF(AC%AP%IID>0)WRITE(9,F69)IBR,MTOT,ATYPE,LAB,PAR(ICU(1)),VAXIS, &
+    CALL AUTOFLUSH(AC%BUNIT)
+    IF(AC%AP%IID>0)WRITE(AC%DUNIT,F69)IBR,MTOT,ATYPE,LAB,PAR(ICU(1)),VAXIS, &
          (U(I),I=1,N2),(PAR(ICU(I)),I=2,N1)
   END SUBROUTINE WRLINE
 
 ! ---------- -----
-  SUBROUTINE WRBAR(C,N)
+  SUBROUTINE WRBAR(AC,C,N)
 
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     CHARACTER(1), INTENT(IN) :: C
     INTEGER, INTENT(IN) :: N
     INTEGER I
 
-    WRITE(9,101)(C,I=1,N)
+    WRITE(AC%DUNIT,101)(C,I=1,N)
 101 FORMAT(80A1)
   END SUBROUTINE WRBAR
 

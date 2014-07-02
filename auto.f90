@@ -88,8 +88,8 @@
           ENDIF
           TOTTIM=TIME1-TIME0
           IF(AP%IID>0)THEN
-             CALL WRBAR("=",47)
-             WRITE(9,301)TOTTIM
+             CALL WRBAR(AC,"=",47)
+             WRITE(AC%DUNIT,301)TOTTIM
           ENDIF
           WRITE(6,301)TOTTIM
           CALL CLEANUP(AC)

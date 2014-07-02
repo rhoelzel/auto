@@ -255,7 +255,7 @@ CONTAINS
              ITNW=AP%ITNW
              NTOP=MOD(NTOT-1,9999)+1
              DSMAX=AP%DSMAX
-             CALL ADPTDS(NIT,ITNW,AP%IBR,NTOP,AP%IID,DSMAX,RDS)
+             CALL ADPTDS(AC,NIT,ITNW,AP%IBR,NTOP,AP%IID,DSMAX,RDS)
              AP%RDS=RDS
           ENDIF
        ENDDO !from branch computation loop
@@ -319,13 +319,13 @@ CONTAINS
        AA(:NDIM,:NDIM)=DFDU(:,:)
        AA(:NDIM,NDIM+1)=DFDP(:,ICP(1))
        AA(NDIM+1,:)=UDOT(:)
-       IF(IID.GE.3)CALL WRJAC(NDIM+1,NDIM+1,AA,F)
+       IF(IID.GE.3)CALL WRJAC(AC,NDIM+1,NDIM+1,AA,F)
        CALL NLVC(AC,NDIM+1,NDIM+1,1,AA,UDOT)
     ELSEIF(IPERP==0)THEN
        ALLOCATE(AAA(NDIM,NDIM+1))
        AAA(:,1:NDIM)=DFDU(:,:)
        AAA(:,NDIM+1)=DFDP(:,ICP(1))
-       IF(IID.GE.3)CALL WRJAC(NDIM,NDIM+1,AAA,F)
+       IF(IID.GE.3)CALL WRJAC(AC,NDIM,NDIM+1,AAA,F)
        CALL NLVC(AC,NDIM,NDIM+1,1,AAA,UDOT)
        DEALLOCATE(AAA)
     ENDIF
@@ -423,11 +423,11 @@ CONTAINS
 
 ! Reduce stepsize and try again.
 
-       CALL ADPTDS(ITNW,ITNW,IBR,NTOP,IID,DSMAX,RDS)
+       CALL ADPTDS(AC,ITNW,ITNW,IBR,NTOP,IID,DSMAX,RDS)
        AP%RDS=RDS
        IF(ABS(RDS).LT.DSMIN)EXIT
        IF(IID.GE.2)THEN
-          WRITE(9,"(I4,I6,A)")IBR,NTOP,' NOTE:Retrying step'
+          WRITE(AC%DUNIT,"(I4,I6,A)")IBR,NTOP,' NOTE:Retrying step'
        ENDIF
     ENDDO
 
@@ -440,11 +440,11 @@ CONTAINS
     ENDIF
     IF(IID>0)THEN
        IF(BSW)THEN
-          WRITE(9,"(I4,I6,A,A,A)")&
+          WRITE(AC%DUNIT,"(I4,I6,A,A,A)")&
                IBR,NTOP,' NOTE:No convergence when switching branches with ',&
                FIXEDMINIMUM,' step size'
        ELSE
-          WRITE(9,"(I4,I6,A,A,A)")&
+          WRITE(AC%DUNIT,"(I4,I6,A,A,A)")&
                IBR,NTOP,' NOTE:No convergence with ',FIXEDMINIMUM,' step size'
        ENDIF
     ENDIF
@@ -515,13 +515,13 @@ CONTAINS
 ! Write additional output on unit 9 if requested :
 
     IF(IID.GE.2)THEN
-       CALL WRBAR("=",47)
+       CALL WRBAR(AC,"=",47)
        IF(BSW)THEN
-          WRITE(9,O9)IBR,NTOP,0,ICP(1), &
+          WRITE(AC%DUNIT,O9)IBR,NTOP,0,ICP(1), &
                U(NDIM+1),(U(I),I=1,MIN(NDIM,6))
        ELSE
-          WRITE(9,100)
-          WRITE(9,101)IBR,NTOP+1,0,U(NDIM+1),RNRMV(NDM,U)
+          WRITE(AC%DUNIT,100)
+          WRITE(AC%DUNIT,101)IBR,NTOP+1,0,U(NDIM+1),RNRMV(NDM,U)
 100       FORMAT(/,'  BR    PT  IT         PAR',11X,'L2-NORM')
 101       FORMAT(I4,I6,I4,5X,2ES14.5)
        ENDIF
@@ -565,7 +565,7 @@ CONTAINS
 
 ! Use Gauss elimination with pivoting to solve the linearized system :
 
-       IF(IID.GE.5)CALL WRJAC(NDIM+1,NDIM+1,AA,RHS)
+       IF(IID.GE.5)CALL WRJAC(AC,NDIM+1,NDIM+1,AA,RHS)
        CALL GEL(AC,NDIM+1,AA,1,DU,RHS,DET)
        AP%DET=DET
 
@@ -585,9 +585,9 @@ CONTAINS
 
        IF(IID.GE.2)THEN
           IF(BSW)THEN
-             WRITE(9,O9)IBR,NTOP,NIT,ICP(1),U(NDIM+1),(U(I),I=1,MIN(NDIM,6))
+             WRITE(AC%DUNIT,O9)IBR,NTOP,NIT,ICP(1),U(NDIM+1),(U(I),I=1,MIN(NDIM,6))
           ELSE
-             WRITE(9,101)IBR,NTOP+1,NIT,U(NDIM+1),RNRMV(NDM,U)
+             WRITE(AC%DUNIT,101)IBR,NTOP+1,NIT,U(NDIM+1),RNRMV(NDM,U)
           ENDIF
        ENDIF
 
@@ -608,7 +608,7 @@ CONTAINS
           DO K=1,NDIM+1
              AA(NDIM+1,K)=UDOT(K)
           ENDDO
-          IF(IID.GE.2)WRITE(9,*)
+          IF(IID.GE.2)WRITE(AC%DUNIT,*)
 ! This subroutine determines an initial approximation to the next
 ! solution on a branch by extrapolating from the two preceding points.
           UDOT(:)=(U(:)-UOLD(:))/RDS
@@ -708,7 +708,7 @@ CONTAINS
        IF((MOD(AP%ITP,10)==-4.AND.LEN_TRIM(ATYPE)>0.AND.TRIM(ATYPE)/='UZ').OR. &
           (AP%ITP==22.AND.TRIM(ATYPE)=='CP'))THEN
           Q=0.d0
-          IF(IID>0)WRITE(9,102)RDS
+          IF(IID>0)WRITE(AC%DUNIT,102)RDS
           RETURN
        ENDIF
        Q1=0.d0
@@ -735,7 +735,7 @@ CONTAINS
     RRDS=ABS(RDS)/(1+SQRT(ABS(DS*DSMAX)))
     IF(RRDS.LT.EPSS)THEN
        Q=0.d0
-       IF(IID>0)WRITE(9,102)RDS
+       IF(IID>0)WRITE(AC%DUNIT,102)RDS
        RETURN
     ENDIF
 
@@ -754,7 +754,7 @@ CONTAINS
 ! If requested write additional output on unit 9 :
 
        IF(IID.GE.2)THEN
-          WRITE(9,101)ITLCSP,RDS
+          WRITE(AC%DUNIT,101)ITLCSP,RDS
        ENDIF
 
        CALL STEPAE(AC,PAR,ICP,FUNI,RDS,AA,U,UDOT,THU,NIT)
@@ -780,7 +780,7 @@ CONTAINS
        RRDS=ABS(RDS)/(1+SQRT(ABS(DS*DSMAX)))
        IF(RRDS.LT.EPSS)THEN
           Q=0.d0
-          IF(IID>0)WRITE(9,102)RDS
+          IF(IID>0)WRITE(AC%DUNIT,102)RDS
           DEALLOCATE(US,UDOTS,AAS)
           STEPPED=.TRUE.
           RETURN
@@ -788,7 +788,7 @@ CONTAINS
 
     ENDDO
 
-    IF(IID>0)WRITE(9,103)IBR,MOD(NTOT-1,9999)+1
+    IF(IID>0)WRITE(AC%DUNIT,103)IBR,MOD(NTOT-1,9999)+1
     ATYPE=''
     ! set back to previous (converged) state
     U(:)=US(:)
@@ -1055,18 +1055,18 @@ CONTAINS
     T=0.d0
 
     MTOT=MOD(NTOT-1,9999)+1
-    WRITE(8,101)IBR,MTOT,ITP,LAB,NFPR,ISW,NTPL,NAR,NROWPR,NTST,0,NPAR,&
+    WRITE(AC%SUNIT,101)IBR,MTOT,ITP,LAB,NFPR,ISW,NTPL,NAR,NROWPR,NTST,0,NPAR,&
          NPARI,AC%NDIM,AC%IPS,0
-    WRITE(8,102)T,(U(I),I=1,NDIM)
+    WRITE(AC%SUNIT,102)T,(U(I),I=1,NDIM)
     IF(DIR)THEN
 ! Write the free parameter indices:
-       WRITE(8,103)(ICP(I),I=1,NFPR)
+       WRITE(AC%SUNIT,103)(ICP(I),I=1,NFPR)
 ! Write the direction of the branch:
-       WRITE(8,102)UDOT(NDIM+1),(UDOT(NDIM-NFPR+I),I=2,NFPR)
-       WRITE(8,102)(UDOT(K),K=1,NDIM)
+       WRITE(AC%SUNIT,102)UDOT(NDIM+1),(UDOT(NDIM-NFPR+I),I=2,NFPR)
+       WRITE(AC%SUNIT,102)(UDOT(K),K=1,NDIM)
     ENDIF
 ! Write the parameter values.
-    WRITE(8,102)(PAR(I),I=1,NPAR)
+    WRITE(AC%SUNIT,102)(PAR(I),I=1,NPAR)
 
 101 FORMAT(6I6,I8,I6,I8,7I5)
 102 FORMAT(4X,7ES19.10)
@@ -1076,20 +1076,21 @@ CONTAINS
   END SUBROUTINE WRTSP8
 
 ! ---------- ------
-  SUBROUTINE WRJAC(M,N,AA,RHS)
+  SUBROUTINE WRJAC(AC,M,N,AA,RHS)
 
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: M,N
     DOUBLE PRECISION, INTENT(IN) :: AA(M,N),RHS(M)
     INTEGER I,J
 
-    WRITE(9,"(A)")' Residual vector :'
-    WRITE(9,"(1X,12E10.3)")RHS(:),(0d0,I=M+1,N)
-    WRITE(9,"(A)")' Jacobian matrix :'
+    WRITE(AC%DUNIT,"(A)")' Residual vector :'
+    WRITE(AC%DUNIT,"(1X,12E10.3)")RHS(:),(0d0,I=M+1,N)
+    WRITE(AC%DUNIT,"(A)")' Jacobian matrix :'
     DO I=1,M
-       WRITE(9,"(1X,12E10.3)")(AA(I,J),J=1,N)
+       WRITE(AC%DUNIT,"(1X,12E10.3)")(AA(I,J),J=1,N)
     ENDDO
     DO I=M+1,N
-       WRITE(9,"(1X,12E10.3)")(0d0,J=1,N)
+       WRITE(AC%DUNIT,"(1X,12E10.3)")(0d0,J=1,N)
     ENDDO
 
   END SUBROUTINE WRJAC
