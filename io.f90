@@ -81,6 +81,7 @@ CONTAINS
     KEYEND=0
     LISTLEN=0
     IERR=0
+
     IF(NPOS==1)THEN
        LINE=LINE+1
        N=READINTEGER(UNITC,STR(1:1),IERR)
@@ -1217,7 +1218,7 @@ CONTAINS
     NPAR=0
     ISW=AC%AP%ISW
 
-    UNIT=3
+    UNIT=AC%SUNIT
     ios=0
     IF(LEN_TRIM(AC%SFILE)==0)THEN
        OPEN(UNIT,FILE='fort.3',STATUS='old',ACCESS='sequential',IOSTAT=ios)

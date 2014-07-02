@@ -316,7 +316,7 @@ CONTAINS
     ! store matrix/derivatives for extended Hopf system in the
     ! bottom of DFDU
     CALL FUNIX(AC,U,PAR,DFU,DFU(1,NDM+1))
-    CALL NLVC(NDM,NDM,2,DFU(1,NDM+1),V)
+    CALL NLVC(AC,NDM,NDM,2,DFU(1,NDM+1),V)
     CALL NRMLZ(NDM,V)
 
     DO I=1,NDM
@@ -331,7 +331,7 @@ CONTAINS
 ! ------ --------- -------- ------
   DOUBLE PRECISION FUNCTION FNCSEQ(AC,ICP,U,NDIM,PAR,ITEST,ATYPE) RESULT(Q)
 
-    TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     INTEGER, INTENT(IN) :: ICP(*),NDIM
     DOUBLE PRECISION, INTENT(IN) :: U(*)
     DOUBLE PRECISION, INTENT(INOUT) :: PAR(*)
@@ -552,7 +552,7 @@ CONTAINS
 
     ALLOCATE(AAA(NDM,NDM))
     AAA(:,:)=AA(1:NDM,1:NDM)
-    CALL EIG(AP,NDM,NDM,AAA,EV)
+    CALL EIG(AC,NDM,NDM,AAA,EV)
     DEALLOCATE(AAA)
 
     IF(ITPST==0)THEN
@@ -600,19 +600,22 @@ CONTAINS
   END FUNCTION FNHBEQ
 
 ! ---------- -------
-  SUBROUTINE RNULLVC(AP,AA,V)
+  SUBROUTINE RNULLVC(AC,AA,V)
 
     ! get null vector for the transposed Jacobian for BT/CP detection
 
     USE SUPPORT, ONLY: NLVC, NRMLZ
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
-    DOUBLE PRECISION, INTENT(IN) :: AA(AP%NDIM+1,AP%NDIM+1)
-    DOUBLE PRECISION, INTENT(INOUT) :: V(AP%NDM)
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
+    DOUBLE PRECISION, INTENT(IN) :: AA(AC%AP%NDIM+1,AC%AP%NDIM+1)
+    DOUBLE PRECISION, INTENT(INOUT) :: V(AC%AP%NDM)
 
     DOUBLE PRECISION, ALLOCATABLE :: DFU(:,:)
     DOUBLE PRECISION, ALLOCATABLE, SAVE :: VOLD(:)
     INTEGER NDM,I
+
+    AP=>AC%AP
 
     NDM=AP%NDM
     IF(.NOT.ALLOCATED(VOLD))THEN
@@ -623,7 +626,7 @@ CONTAINS
     DO I=1,NDM
        DFU(1:NDM,I)=AA(NDM+I,NDM+1:2*NDM)
     ENDDO
-    CALL NLVC(NDM,NDM,1,DFU,V)
+    CALL NLVC(AC,NDM,NDM,1,DFU,V)
     CALL NRMLZ(NDM,V)
     IF(DOT_PRODUCT(V,VOLD)<0)THEN
        V(:)=-V(:)
@@ -654,7 +657,7 @@ CONTAINS
 
     IF(AP%ITPST==2)THEN
        ! BT on Fold curve
-       FNBTEQ=FNBTAE(AP,U,AA)
+       FNBTEQ=FNBTAE(AC,U,AA)
     ELSEIF(AP%ITPST==3)THEN
        ! BT on Hopf curve
        FNBTEQ = U(AP%NDIM-1)
@@ -745,7 +748,7 @@ CONTAINS
        SMAT(1:n,i) = AA(i,1:n)
     ENDDO
     SMAT(n+1:2*n,n+1:2*n) = SMAT(1:n,1:n)
-    CALL NLVC(2*n,2*n,2,SMAT,tmp)
+    CALL NLVC(AC,2*n,2*n,2,SMAT,tmp)
     pR = tmp(:n)
     pI = tmp(n+1:)
 
@@ -769,7 +772,7 @@ CONTAINS
     ! Step 3
     A1(:,:) = AA(1:n,1:n)
     f1(:) =  a+b
-    CALL GEL(n,A1,1,r,f1,DET)
+    CALL GEL(AC,n,A1,1,r,f1,DET)
     SMAT(:,:) = 0d0
     DO i = 1,n
        SMAT(i,n+i) = -2*omega
@@ -779,7 +782,7 @@ CONTAINS
     SMAT(n+1:2*n,n+1:2*n) = SMAT(1:n,1:n)
     abc(:n) = a-b
     abc(n+1:) = 2*c
-    CALL GEL(2*n,SMAT,1,tmp,abc,DET)
+    CALL GEL(AC,2*n,SMAT,1,tmp,abc,DET)
     sR = tmp(:n)
     sI = tmp(n+1:)
 

@@ -63,7 +63,7 @@ CONTAINS
   END SUBROUTINE MUELLER
 
 ! ---------- ---
-  SUBROUTINE EIG(AP,NDIM,M1A,A,EV)
+  SUBROUTINE EIG(AC,NDIM,M1A,A,EV)
 
 ! This subroutine uses the LAPACK subroutine DGEEV to compute the
 ! eigenvalues of the general real matrix A.
@@ -71,7 +71,8 @@ CONTAINS
 ! M1A is the first dimension of A as in the DIMENSION statement.
 ! The eigenvalues are to be returned in the complex vector EV.
     
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM, M1A
     DOUBLE PRECISION, INTENT(INOUT) :: A(M1A,NDIM)
     COMPLEX(KIND(1.0D0)), INTENT(OUT) :: EV(NDIM)
@@ -81,6 +82,8 @@ CONTAINS
     DOUBLE PRECISION, ALLOCATABLE :: WR(:),WI(:),Z(:,:)
     DOUBLE PRECISION FV1(1)
     ALLOCATE(WR(NDIM),WI(NDIM),Z(M1A,NDIM))
+
+    AP=>AC%AP
 
     IID=AP%IID
     IBR=AP%IBR
@@ -95,16 +98,16 @@ CONTAINS
     ENDIF
 
     CALL RG(M1A,NDIM,A,WR,WI,MATZ,Z,IV1,FV1,IER)
-    IF(IER/=0)WRITE(9,'(I4,I6,A)') IBR,NTOP,&
+    IF(IER/=0)WRITE(AC%DUNIT,'(I4,I6,A)') IBR,NTOP,&
          'NOTE:Error return from EISPACK routine RG'
     IF(MATZ/=0)THEN
-       WRITE(9,'(A)')' Eigenvalues:'
+       WRITE(AC%DUNIT,'(A)')' Eigenvalues:'
        DO I=1,NDIM
-          WRITE(9,'(4X,7ES19.10)')WR(I),WI(I)
+          WRITE(AC%DUNIT,'(4X,7ES19.10)')WR(I),WI(I)
        ENDDO
-       WRITE(9,'(A)')' Eigenvectors (by row):'
+       WRITE(AC%DUNIT,'(A)')' Eigenvectors (by row):'
        DO I=1,NDIM
-          WRITE(9,'(4X,7ES19.10)')Z(:NDIM,I)
+          WRITE(AC%DUNIT,'(4X,7ES19.10)')Z(:NDIM,I)
        ENDDO
     ENDIF
 
@@ -116,7 +119,7 @@ CONTAINS
   END SUBROUTINE EIG
 
 ! ---------- ------
-  SUBROUTINE NULLVC(m,n,k,A,u,icpiv,irpiv)
+  SUBROUTINE NULLVC(AC, m,n,k,A,u,icpiv,irpiv)
 
 ! Finds a null-vector of a singular matrix A.
 ! The null space of A is assumed to be K-dimensional.
@@ -129,6 +132,7 @@ CONTAINS
 !     u : on exit U contains the null vector,
 !    ic : integer array of dimension at least N.
 !
+    TYPE(AUTOCONTEXT), INTENT(IN):: AC
 
     INTEGER, INTENT(IN) :: m,n,k
     DOUBLE PRECISION, INTENT(INOUT) :: A(m,n)
@@ -160,7 +164,7 @@ CONTAINS
           amax = piv
        ENDIF
        IF(piv<=amax/HUGE(piv))THEN
-          WRITE(9,"(8x,A,I3,A,ES11.4E3,A,ES11.4E3,A,ES11.4E3,A/A)") &
+          WRITE(AC%DUNIT,"(8x,A,I3,A,ES11.4E3,A,ES11.4E3,A,ES11.4E3,A/A)") &
                ' NOTE:Pivot ',jj,' = ',piv,' <= ||A||_max/',HUGE(piv),' = ', &
                amax/HUGE(piv),' in NLVC : ',&
                '        A null space may be multi-dimensional'
@@ -226,7 +230,7 @@ CONTAINS
   END SUBROUTINE NULLVC
 
 ! ---------- ----
-  SUBROUTINE NLVC(m,n,k,A,U)
+  SUBROUTINE NLVC(AC,m,n,k,A,U)
 
 ! Finds a null-vector of a singular matrix A.
 ! The null space of A is assumed to be k-dimensional.
@@ -238,6 +242,7 @@ CONTAINS
 !     A : M * N matrix of coefficients,
 !     U : on exit U contains the null vector,
 !
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: m,n,k
     DOUBLE PRECISION, INTENT(INOUT) :: A(m,n)
     DOUBLE PRECISION, INTENT(OUT) :: U(n)
@@ -245,7 +250,7 @@ CONTAINS
     INTEGER, ALLOCATABLE :: icpiv(:),irpiv(:)
 
     ALLOCATE(icpiv(n),irpiv(n))
-    CALL NULLVC(m,n,k,A,U,icpiv,irpiv)
+    CALL NULLVC(AC,m,n,k,A,U,icpiv,irpiv)
     DEALLOCATE(icpiv,irpiv)
 
   END SUBROUTINE NLVC
@@ -313,7 +318,7 @@ CONTAINS
   END SUBROUTINE EXPANDJAC
 
 ! ---------- ----
-  SUBROUTINE GELI(N,M1A,A,NRHS,NDX,U,M1F,F,ICPIV,DET,SCALE)
+  SUBROUTINE GELI(AC,N,M1A,A,NRHS,NDX,U,M1F,F,ICPIV,DET,SCALE)
 
 ! Solves the linear system  A U = F by Gauss elimination
 ! with complete pivoting. Optionally returns a scaled determinant.
@@ -332,6 +337,8 @@ CONTAINS
 !  ICPIV: integer vector of dimension at least N.
 !
 ! The input matrix A is overwritten.
+
+    TYPE(AUTOCONTEXT), INTENT(IN) :: AC
 
     INTEGER, INTENT(IN) :: N,M1A,NRHS,NDX,M1F
     DOUBLE PRECISION, INTENT(INOUT) :: A(M1A,N),F(M1F,NRHS)
@@ -376,7 +383,7 @@ CONTAINS
           amax = PIV
        ENDIF
        IF(PIV<=amax/HUGE(PIV))THEN
-          WRITE(9,"(8x,A,I3,A,ES11.4E3,A,ES11.4E3,A,ES11.4E3,A)")&
+          WRITE(AC%DUNIT,"(8x,A,I3,A,ES11.4E3,A,ES11.4E3,A,ES11.4E3,A)")&
                ' NOTE:Pivot ',JJ,' = ',PIV,' <= ||A||_max/',HUGE(PIV),' = ', &
                amax/HUGE(PIV),' in GE'
           ! to avoid overflow in most cases
@@ -421,7 +428,7 @@ CONTAINS
     ENDDO
     AP=A(N,N)
     IF(ABS(AP)<=amax/HUGE(AP))THEN
-       WRITE(9,"(8x,A,I3,A,ES11.4E3,A,ES11.4E3,A,ES11.4E3,A)")&
+       WRITE(AC%DUNIT,"(8x,A,I3,A,ES11.4E3,A,ES11.4E3,A,ES11.4E3,A)")&
             ' NOTE:Pivot ',N,' = ',ABS(AP),' <= ||A||_max/',HUGE(AP),' = ', &
             amax/HUGE(AP),' in GE'
        ! to avoid overflow in most cases
@@ -462,24 +469,26 @@ CONTAINS
   END SUBROUTINE GELI
 
 ! ---------- ---
-  SUBROUTINE GEL(N,A,NRHS,U,F,DET)
+  SUBROUTINE GEL(AC,N,A,NRHS,U,F,DET)
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: N,NRHS
     DOUBLE PRECISION, INTENT(INOUT) :: A(N,N),F(N,NRHS)
     DOUBLE PRECISION, INTENT(OUT) :: U(N,NRHS),DET
     INTEGER, ALLOCATABLE :: ICPIV(:)
     ALLOCATE(ICPIV(N))
-    CALL GELI(N,N,A,NRHS,N,U,N,F,ICPIV,DET,.FALSE.)
+    CALL GELI(AC,N,N,A,NRHS,N,U,N,F,ICPIV,DET,.FALSE.)
     DEALLOCATE(ICPIV)
   END SUBROUTINE GEL
 
 ! ---------- ----
-  SUBROUTINE GESC(N,A,NRHS,U,F,DET)
+  SUBROUTINE GESC(AC,N,A,NRHS,U,F,DET)
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: N,NRHS
     DOUBLE PRECISION, INTENT(INOUT) :: A(N,N),F(N,NRHS)
     DOUBLE PRECISION, INTENT(OUT) :: U(N,NRHS),DET
     INTEGER, ALLOCATABLE :: ICPIV(:)
     ALLOCATE(ICPIV(N))
-    CALL GELI(N,N,A,NRHS,N,U,N,F,ICPIV,DET,.TRUE.)
+    CALL GELI(AC,N,N,A,NRHS,N,U,N,F,ICPIV,DET,.TRUE.)
     DEALLOCATE(ICPIV)
   END SUBROUTINE GESC
 
@@ -746,7 +755,7 @@ CONTAINS
     FNUZ=PAR(ABS(IUZ(IUZR)))-VUZ(IUZR)
     ATYPE='UZ'
 
-    IF(IID.GE.3)WRITE(9,101)ABS(IBR),NTOP+1,IUZR,FNUZ
+    IF(IID.GE.3)WRITE(AC%DUNIT,101)ABS(IBR),NTOP+1,IUZR,FNUZ
 101 FORMAT(I4,I6,9X,'User Func.',I3,1X,ES14.5)
 
   END FUNCTION FNUZ
@@ -908,9 +917,9 @@ CONTAINS
           SOLFILE='fort.8'
           DIAFILE='fort.9'
        ENDIF
-       OPEN(7,FILE=BIFFILE,STATUS='unknown',ACCESS='sequential')
-       OPEN(8,FILE=SOLFILE,STATUS='unknown',ACCESS='sequential')
-       OPEN(9,FILE=DIAFILE,STATUS='unknown',ACCESS='sequential')
+       OPEN(AC%BUNIT,FILE=BIFFILE,STATUS='unknown',ACCESS='sequential')
+       OPEN(AC%SUNIT,FILE=SOLFILE,STATUS='unknown',ACCESS='sequential')
+       OPEN(AC%DUNIT,FILE=DIAFILE,STATUS='unknown',ACCESS='sequential')
     ENDIF
 
   END SUBROUTINE INIT3
@@ -927,14 +936,16 @@ END MODULE SUPPORT
 ! various demos so cannot be inside the module
 
 ! ---------- --
-  SUBROUTINE GE(IAM,N,M1A,A,NRHS,NDX,U,M1F,F,IR,IC,DET)
+  SUBROUTINE GE(AC,IAM,N,M1A,A,NRHS,NDX,U,M1F,F,IR,IC,DET)
     USE SUPPORT
+    USE AUTO_TYPES, ONLY: AUTOCONTEXT
     IMPLICIT NONE
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: IAM,N,M1A,NRHS,NDX,M1F,IR(N)
     DOUBLE PRECISION, INTENT(INOUT) :: A(M1A,N),F(M1F,NRHS)
     DOUBLE PRECISION, INTENT(OUT) :: U(NDX,NRHS),DET
     INTEGER, INTENT(OUT) :: IC(N)
-    CALL GELI(N,M1A,A,NRHS,NDX,U,M1F,F,IC,DET,.FALSE.)
+    CALL GELI(AC,N,M1A,A,NRHS,NDX,U,M1F,F,IC,DET,.FALSE.)
   END SUBROUTINE GE
 
 ! ------ --------- -------- ----

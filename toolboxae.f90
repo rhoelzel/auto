@@ -363,7 +363,7 @@ CONTAINS
           DFU(I,I)=DFU(I,I)+2
        ENDDO
     ENDIF
-    CALL NLVC(NDM,NDM,1,DFU,V)
+    CALL NLVC(AC,NDM,NDM,1,DFU,V)
     CALL NRMLZ(NDM,V)
     DO I=1,NDM
        U(NDM+I)=V(I)
@@ -607,7 +607,7 @@ CONTAINS
     CALL FUNI(AC,NDM,U,U,ICP,PAR,2,F,DFU,DFP)
     A(:,1:NDM)=DFU(:,:)
     A(:,NDM+1)=DFP(:,ICP(1))
-    CALL NLVC(NDM,NDM+1,2,A,V)
+    CALL NLVC(AC,NDM,NDM+1,2,A,V)
     DEALLOCATE(A)
     ALLOCATE(A(NDM+1,NDM+1))
     DO I=1,NDM
@@ -619,7 +619,7 @@ CONTAINS
     DO I=1,NDM+1
        A(I,NDM+1)=V(I)
     ENDDO
-    CALL NLVC(NDM+1,NDM+1,1,A,V)
+    CALL NLVC(AC,NDM+1,NDM+1,1,A,V)
     CALL NRMLZ(NDM,V)
     DO I=1,NDM
        U(NDM+I)=V(I)
@@ -640,7 +640,7 @@ CONTAINS
 ! ------ --------- -------- ------
   DOUBLE PRECISION FUNCTION FNCSAE(AC,ICP,U,NDIM,PAR,ITEST,ATYPE) RESULT(Q)
 
-    TYPE(AUTOCONTEXT), INTENT(INOUT):: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     INTEGER, INTENT(IN) :: ICP(*),NDIM
     DOUBLE PRECISION, INTENT(IN) :: U(*)
     DOUBLE PRECISION, INTENT(INOUT) :: PAR(*)
@@ -751,7 +751,7 @@ CONTAINS
     RHS(NDIM+1)=1.d0
 
     ALLOCATE(UD(NDIM+1))
-    CALL GEL(NDIM+1,AAA,1,UD,RHS,DET)
+    CALL GEL(AC,NDIM+1,AAA,1,UD,RHS,DET)
 !   don't store DET here: it is for a different matrix than
 !   used with pseudo arclength continuation and sometimes has
 !   a  different sign
@@ -769,19 +769,22 @@ CONTAINS
   END FUNCTION FNLPAE
 
 ! ---------- -------
-  SUBROUTINE RNULLVC(AP,AA,V)
+  SUBROUTINE RNULLVC(AC,AA,V)
 
     ! get null vector for the transposed Jacobian for BT/CP detection
 
     USE SUPPORT, ONLY: NLVC, NRMLZ
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
-    DOUBLE PRECISION, INTENT(IN) :: AA(AP%NDIM+1,AP%NDIM+1)
-    DOUBLE PRECISION, INTENT(INOUT) :: V(AP%NDM)
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
+    DOUBLE PRECISION, INTENT(IN) :: AA(AC%AP%NDIM+1,AC%AP%NDIM+1)
+    DOUBLE PRECISION, INTENT(INOUT) :: V(AC%AP%NDM)
 
     DOUBLE PRECISION, ALLOCATABLE :: DFU(:,:)
     DOUBLE PRECISION, ALLOCATABLE, SAVE :: VOLD(:)
     INTEGER NDM,I
+
+    AP=>AC%AP
 
     NDM=AP%NDM
     IF(.NOT.ALLOCATED(VOLD))THEN
@@ -792,7 +795,7 @@ CONTAINS
     DO I=1,NDM
        DFU(1:NDM,I)=AA(NDM+I,NDM+1:2*NDM)
     ENDDO
-    CALL NLVC(NDM,NDM,1,DFU,V)
+    CALL NLVC(AC,NDM,NDM,1,DFU,V)
     CALL NRMLZ(NDM,V)
     IF(DOT_PRODUCT(V,VOLD)<0)THEN
        V(:)=-V(:)
@@ -802,24 +805,27 @@ CONTAINS
   END SUBROUTINE RNULLVC
 
 ! ------ --------- -------- ------
-  DOUBLE PRECISION FUNCTION FNBTAE(AP,U,AA)
+  DOUBLE PRECISION FUNCTION FNBTAE(AC,U,AA)
 
     ! evaluate Bogdanov-Takens/1:1/1:2-resonance test function
     ! this function is used by equilibrium.f90 and maps.f90.
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
-    DOUBLE PRECISION, INTENT(IN) :: U(AP%NDIM), AA(AP%NDIM+1,AP%NDIM+1)
+    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOPARAMETERS), POINTER :: AP
+    DOUBLE PRECISION, INTENT(IN) :: U(AC%AP%NDIM), AA(AC%AP%NDIM+1,AC%AP%NDIM+1)
 ! Local
     INTEGER NDM
     DOUBLE PRECISION, ALLOCATABLE :: V(:)
 
     FNBTAE = 0
 
+    AP=>AC%AP
+
     NDM=AP%NDM
 
     ! take the inner product with the null vector for the Jacobian
     ALLOCATE(V(NDM))
-    CALL RNULLVC(AP,AA,V)
+    CALL RNULLVC(AC,AA,V)
     FNBTAE = DOT_PRODUCT(U(NDM+1:2*NDM),V(1:NDM))
     DEALLOCATE(V)
 
@@ -854,7 +860,7 @@ CONTAINS
     NDM=AP%NDM
     ALLOCATE(UU(NDM),F(NDM),V(NDM))
 
-    CALL RNULLVC(AP,AA,V)
+    CALL RNULLVC(AC,AA,V)
 
     ! Evaluate cusp function:
     H=0.d0

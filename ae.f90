@@ -320,13 +320,13 @@ CONTAINS
        AA(:NDIM,NDIM+1)=DFDP(:,ICP(1))
        AA(NDIM+1,:)=UDOT(:)
        IF(IID.GE.3)CALL WRJAC(NDIM+1,NDIM+1,AA,F)
-       CALL NLVC(NDIM+1,NDIM+1,1,AA,UDOT)
+       CALL NLVC(AC,NDIM+1,NDIM+1,1,AA,UDOT)
     ELSEIF(IPERP==0)THEN
        ALLOCATE(AAA(NDIM,NDIM+1))
        AAA(:,1:NDIM)=DFDU(:,:)
        AAA(:,NDIM+1)=DFDP(:,ICP(1))
        IF(IID.GE.3)CALL WRJAC(NDIM,NDIM+1,AAA,F)
-       CALL NLVC(NDIM,NDIM+1,1,AAA,UDOT)
+       CALL NLVC(AC,NDIM,NDIM+1,1,AAA,UDOT)
        DEALLOCATE(AAA)
     ENDIF
 
@@ -566,7 +566,7 @@ CONTAINS
 ! Use Gauss elimination with pivoting to solve the linearized system :
 
        IF(IID.GE.5)CALL WRJAC(NDIM+1,NDIM+1,AA,RHS)
-       CALL GEL(NDIM+1,AA,1,DU,RHS,DET)
+       CALL GEL(AC,NDIM+1,AA,1,DU,RHS,DET)
        AP%DET=DET
 
 ! Add the Newton increments :

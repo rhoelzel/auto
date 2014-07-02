@@ -79,6 +79,12 @@ MODULE AUTO_TYPES
 
      ! HomCont constants:
      TYPE(HCONST_TYPE)HCONST
+
+     ! ID of the AUTOCONTEXT
+     INTEGER ID
+     ! IO units for the different files
+     INTEGER CUNIT, SUNIT, BUNIT, DUNIT
+
   END TYPE AUTOCONTEXT
 
 END MODULE AUTO_TYPES

@@ -6,3 +6,4 @@ musst Du eh nochmal alle Files kontrollieren!
 interfaces.f90 hat noch die falschen signaturen
 look out for uses of SAVE!!
 toolboxbv.f90 stpnub: hardcoded 3
+homcont.f90 inho: hardcoded 12

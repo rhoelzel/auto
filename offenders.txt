@@ -82,3 +82,6 @@ seems to be used pretty often
 toolboxae: HMACH
 
 toolboxbv: HMACH
+
+
+homcont initialization ?? INSTRHO usw??

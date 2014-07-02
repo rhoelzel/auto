@@ -145,7 +145,7 @@
             PAR(ICP(I))=RLCUR(I)
          ENDDO
          CALL SUBVBC(NDIM,NTST*NCOL,NBC,NFPR,BCNI, &
-                 AP,PAR,NPAR,ICP,CDBC,FC,UPS,IFST)
+                 AC,PAR,NPAR,ICP,CDBC,FC,UPS,IFST)
          CALL SETFCDD(IFST,D,FC(NBC+1),NFPR,NINT)
          CALL SUBVPSA(NFPR,RDS,D(1,NRC),FC(NFC),RLCUR,RLOLD,RLDOT,THL,IFST)
          IF(KWT.GT.1)THEN
@@ -171,7 +171,7 @@
          IFST,IAM,IT,NT,IRF,ICF,IID,NLLV)
 
       I = (IT*NA+NT-1)/NT+1
-      CALL BRBD(A(1,1,I),B(1,1,I),C(1,1,I),D,DD,DUPS(1,(I-1)*NCOL),FAA,FC,&
+      CALL BRBD(AC,A(1,1,I),B(1,1,I),C(1,1,I),D,DD,DUPS(1,(I-1)*NCOL),FAA,FC,&
         FCFC,P0,P1,IFST,IID,NLLV,DET,NDIM,NTST,NA,NBC,NROW,NCLM,         &
         NFPR,NFC,A1,A2,BB,CC,C2,CDBC,                                    &
         SOL,S1,S2,IPR,IPC,IRF(1,I),ICF(1,I),IAM,KWT,IT,NT)
@@ -214,7 +214,7 @@
 
 !     ---------- ---------
       SUBROUTINE SUBVBC(NDIM,NTNC,NBC,NCB,BCNI, &
-       AP,PAR,NPAR,ICP,CDBC,FC,UPS,IFST)
+       AC,PAR,NPAR,ICP,CDBC,FC,UPS,IFST)
 
 !     This subroutine handles a non-parallel part of SETUBV, that is,
 !     * the boundary conditions (not much to parallelize here and
@@ -223,7 +223,7 @@
 
       include 'interfaces.h'
 
-      TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+      TYPE(AUTOCONTEXT), INTENT(IN) :: AC
       INTEGER NDIM,NTNC,NBC,NCB,ICP(*),IFST,NPAR
       DOUBLE PRECISION CDBC(2*NDIM+NCB,NBC)
       DOUBLE PRECISION UPS(NDIM,0:NTNC),FC(*),PAR(*)
@@ -242,7 +242,7 @@
             UBC0(I)=UPS(I,0)
             UBC1(I)=UPS(I,NTNC)
          ENDDO
-         CALL BCNI(AP,NDIM,PAR,ICP,NBC,UBC0,UBC1,FBC,IFST*2,DBC)
+         CALL BCNI(AC,NDIM,PAR,ICP,NBC,UBC0,UBC1,FBC,IFST*2,DBC)
          DO I=1,NBC
             FC(I)=-FBC(I)
             IF(IFST.EQ.1)THEN
@@ -398,7 +398,7 @@
 !     
 !     Integral constraints+pseudo-arclength equation :
 !     
-            CALL SBVICN(NDIM,NINT,NCB,NCA,ICNI,AC%AP,PRM,ICP,            &
+            CALL SBVICN(NDIM,NINT,NCB,NCA,ICNI,AC,PRM,ICP,            &
                  CC(K1,1,J),DD(1,1,J),FC(1,J),UPS(1,J1),UOLDPS(1,J1), &
                  UDOTPS(1,J1),UPOLDP(1,J1),DTM(J),THU,WI(K),FICD,DICD,&
                  U,UOLD,UID,UIP,IFST,NLLV)
@@ -483,7 +483,7 @@
       END SUBROUTINE SBVFUN
 
 !     ---------- ------
-      SUBROUTINE SBVICN(NDIM,NINT,NCB,NCA,ICNI,AP,PAR,ICP,CC,DD,FC,   &
+      SUBROUTINE SBVICN(NDIM,NINT,NCB,NCA,ICNI,AC,PAR,ICP,CC,DD,FC,   &
        UPS,UOLDPS,UDOTPS,UPOLDP,DTM,THU,WI,FICD,DICD,UIC,UIO,UID,UIP, &
        IFST,NLLV)
 
@@ -492,7 +492,7 @@
 !     result too.
 
       include 'interfaces.h'
-      TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+      TYPE(AUTOCONTEXT), INTENT(IN) :: AC
       INTEGER, INTENT(IN) :: NDIM,NINT,NCB,NCA,ICP(*),IFST,NLLV
       DOUBLE PRECISION, INTENT(INOUT) :: PAR(*)
       DOUBLE PRECISION, INTENT(IN) :: UPS(*),UDOTPS(*)
@@ -512,7 +512,7 @@
             UID(I)=UDOTPS(I)
             UIP(I)=UPOLDP(I)
          ENDDO
-         CALL ICNI(AP,NDIM,PAR,ICP,NINT,UIC,UIO,UID,UIP,FICD,IFST*2,DICD)
+         CALL ICNI(AC,NDIM,PAR,ICP,NINT,UIC,UIO,UID,UIP,FICD,IFST*2,DICD)
          DO M=1,NINT
             IF(IFST.EQ.1)THEN
                DO I=1,NDIM
@@ -544,7 +544,7 @@
       END SUBROUTINE SETUBV
 
 !     ---------- ----
-      SUBROUTINE BRBD(A,B,C,D,DD,FA,FAA,FC,FCFC,P0,P1,IFST,  &
+      SUBROUTINE BRBD(AC,A,B,C,D,DD,FA,FAA,FC,FCFC,P0,P1,IFST,  &
         IDB,NLLV,DET,NOV,NTST,NA,NBC,NRA,NCA,                &
         NCB,NFC,A1,A2,BB,CC,C2,CDBC,                         &
         SOL,S1,S2,IPR,IPC,IRF,ICF,IAM,KWT,IT,NT)
@@ -670,6 +670,7 @@
 !        Parts of the reduction are done in SUBVPA.
 
 ! Arguments
+        TYPE(AUTOCONTEXT), INTENT(IN) :: AC
       INTEGER, INTENT(IN) :: IFST,IDB,NLLV,NOV,NTST,NA,NBC,NRA
       INTEGER, INTENT(IN) :: NCA,NCB,NFC,IAM,KWT,IT,NT
       DOUBLE PRECISION, INTENT(OUT) :: DET
@@ -751,7 +752,7 @@
             ENDIF
          ENDDO
          ALLOCATE(FCC(NOV+NFC),E(NOV+NFC,NOV+NFC))
-         CALL DIMRGE(E,CC,C2,CDBC,D,FC,                               &
+         CALL DIMRGE(AC,E,CC,C2,CDBC,D,FC,                               &
            NTST,NFC,NBC,NOV,NCB,IDB,NLLV,FCC,P0,P1,DET,A1,A2,FAA,BB)
          DO II=1,NOV
             SOL(II,1)=FCC(II)
@@ -1398,11 +1399,12 @@
       END SUBROUTINE REDUCE
 
 !     ---------- ------
-      SUBROUTINE DIMRGE(E,CC,C2,CDBC,D,FC, &
+      SUBROUTINE DIMRGE(AC,E,CC,C2,CDBC,D,FC, &
            NA,NFC,NBC,NOV,NCB,IDB,NLLV,FCC,P0,P1,DET,A1,A2,FAA,BB)
 
       USE SUPPORT
 ! Arguments
+      TYPE(AUTOCONTEXT), INTENT(IN)::AC
       INTEGER   NA,NFC,NBC,NOV,NCB,IDB,NLLV
       DOUBLE PRECISION E(NOV+NFC,*),CC(NOV,NFC-NBC,*),C2(NOV,NFC-NBC,*)
       DOUBLE PRECISION CDBC(2*NOV+NCB,NBC),D(NCB,*)
@@ -1469,7 +1471,7 @@
 
 ! Solve for FCC
       IF(NLLV>0)THEN
-         CALL NLVC(NCR,NCR,NLLV,E,FCC)
+         CALL NLVC(AC,NCR,NCR,NLLV,E,FCC)
          DET=0.d0
       ELSE
          IF(NLLV<0)THEN
@@ -1478,7 +1480,7 @@
             ENDDO
             XE(NCR)=1.D0
          ENDIF
-         CALL GEL(NCR,E,1,FCC,XE,DET)
+         CALL GEL(AC,NCR,E,1,FCC,XE,DET)
       ENDIF
 
       IF(IDB.GE.4)THEN
