@@ -253,10 +253,9 @@ CONTAINS
 ! ---------- ----
   SUBROUTINE BCPS(AC,NDIM,PAR,ICP,NBC,U0,U1,F,IJAC,DBC)
 
-    USE BVP, ONLY: IRTN, NRTN
     USE SUPPORT, ONLY : PI
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
     DOUBLE PRECISION, INTENT(OUT) :: F(NBC)
@@ -271,9 +270,9 @@ CONTAINS
     ENDDO
 
     ! Rotations
-    IF(IRTN.NE.0)THEN
+    IF(AC%BVP%IRTN.NE.0)THEN
        DO I=1,NBC/2
-          IF(NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*NRTN(I)
+          IF(AC%BVP%NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*AC%BVP%NRTN(I)
        ENDDO
     ENDIF
 
@@ -366,7 +365,7 @@ CONTAINS
     ! BCND, ICND, and period-scaled F in FUNC, and the user period-scaling of F
     ! must be taken into account.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
@@ -552,10 +551,9 @@ CONTAINS
 
     ! Boundary conditions for continuing folds (Periodic solutions)
 
-    USE BVP, ONLY: IRTN, NRTN
     USE SUPPORT, ONLY : PI
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
@@ -571,10 +569,10 @@ CONTAINS
     ENDDO
 
     ! Rotations
-    IF(IRTN.NE.0)THEN
+    IF(AC%BVP%IRTN.NE.0)THEN
        NDM=AP%NDM
        DO I=1,NDM
-          IF(NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*NRTN(I)
+          IF(AC%BVP%NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*AC%BVP%NRTN(I)
        ENDDO
     ENDIF
 
@@ -655,7 +653,7 @@ CONTAINS
     ! Generates starting data for the 2-parameter continuation of folds
     ! on a branch of periodic solutions.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
@@ -907,10 +905,9 @@ CONTAINS
 
     ! Boundary conditions for continuing BP (Periodic solutions)
 
-    USE BVP, ONLY: IRTN, NRTN
     USE SUPPORT, ONLY : PI
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
@@ -938,9 +935,9 @@ CONTAINS
     ENDIF
 
     ! Rotations
-    IF(IRTN.NE.0)THEN
+    IF(AC%BVP%IRTN.NE.0)THEN
        DO I=1,NDM
-          IF(NRTN(I).NE.0)FB(I)=FB(I)+PI(2.d0)*NRTN(I)
+          IF(AC%BVP%NRTN(I).NE.0)FB(I)=FB(I)+PI(2.d0)*AC%BVP%NRTN(I)
        ENDDO
     ENDIF
 
@@ -1192,7 +1189,7 @@ CONTAINS
     ! Generates starting data for the 2-parameter continuation of BP
     ! on a branch of periodic solutions.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
@@ -1429,13 +1426,12 @@ CONTAINS
 ! ---------- ----
   SUBROUTINE BCPD(AC,NDIM,PAR,ICP,NBC,U0,U1,F,IJAC,DBC)
 
-    USE BVP, ONLY: IRTN, NRTN
     USE SUPPORT, ONLY : PI
 
     ! Generate boundary conditions for the 2-parameter continuation
     ! of period doubling bifurcations.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
@@ -1454,9 +1450,9 @@ CONTAINS
     ENDDO
 
     ! Rotations
-    IF(IRTN.NE.0)THEN
+    IF(AC%BVP%IRTN.NE.0)THEN
        DO I=1,NDM
-          IF(NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*NRTN(I)
+          IF(AC%BVP%NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*AC%BVP%NRTN(I)
        ENDDO
     ENDIF
 
@@ -1535,7 +1531,7 @@ CONTAINS
     ! Generates starting data for the 2-parameter continuation of
     ! period-doubling bifurcations on a branch of periodic solutions.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
@@ -1695,10 +1691,9 @@ CONTAINS
 ! ---------- ----
   SUBROUTINE BCTR(AC,NDIM,PAR,ICP,NBC,U0,U1,F,IJAC,DBC)
 
-    USE BVP, ONLY: IRTN, NRTN
     USE SUPPORT, ONLY : PI
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
@@ -1726,9 +1721,9 @@ CONTAINS
     ENDDO
 
     ! Rotations
-    IF(IRTN.NE.0)THEN
+    IF(AC%BVP%IRTN.NE.0)THEN
        DO I=1,NDM
-          IF(NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*NRTN(I)
+          IF(AC%BVP%NRTN(I).NE.0)F(I)=F(I) + PI(2.d0)*AC%BVP%NRTN(I)
        ENDDO
     ENDIF
 
@@ -1816,7 +1811,7 @@ CONTAINS
     ! Generates starting data for the 2-parameter continuation of torus
     ! bifurcations.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
@@ -1872,7 +1867,6 @@ CONTAINS
 
 ! ------ --------- -------- ------
   DOUBLE PRECISION FUNCTION FNCSPS(AC,ICP,UPS,NDIM,PAR,ITEST,ATYPE) RESULT(Q)
-    USE SUPPORT, ONLY: P0=>P0V, P1=>P1V, EV=>EVV
 
     TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     INTEGER, INTENT(IN) :: ICP(*),NDIM
@@ -1883,7 +1877,7 @@ CONTAINS
 
     Q=FNCSBV(AC,ICP,UPS,NDIM,PAR,ITEST,ATYPE)
     IF(ITEST==3)THEN
-        Q=FNSPBV(AC,PAR,ATYPE,P0,P1,EV)
+        Q=FNSPBV(AC,PAR,ATYPE,AC%SUPPORT%P0V,AC%SUPPORT%P1V,AC%SUPPORT%EVV)
     ENDIF
   END FUNCTION FNCSPS
 

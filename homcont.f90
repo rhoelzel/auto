@@ -282,7 +282,7 @@ CONTAINS
 
     ! Generates the boundary conditions for homoclinic bifurcation analysis
 
-    TYPE(AUTOCONTEXT), INTENT(IN),TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT),TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
@@ -363,13 +363,12 @@ CONTAINS
   SUBROUTINE FBHO(AC,NDIM,PAR,ICP,NBC,CSAVE,U0,U1,FB)
 
     USE SUPPORT, ONLY: PI
-    USE BVP, ONLY: NRTN, IRTN
     USE INTERFACES, ONLY: FUNC,BCND,PVLS
     USE SUPPORT, ONLY: AUTOSTOP
 
     ! Generates the boundary conditions for homoclinic orbits.
 
-    TYPE(AUTOCONTEXT), INTENT(IN),TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT),TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*),NDIM,NBC
     DOUBLE PRECISION, INTENT(INOUT) :: PAR(*),U0(NDIM),U1(NDIM)
@@ -407,14 +406,14 @@ CONTAINS
        !          write(9,*) I,XEQUIB1(I)
     ENDDO
     ! ** Rotations */
-    IF(IRTN/=0)THEN
+    IF(AC%BVP%IRTN/=0)THEN
        DO I=1,NDM
           XEQUIB2(I)=XEQUIB1(I)
-          IF(NRTN(I)/=0)THEN
+          IF(AC%BVP%NRTN(I)/=0)THEN
              IF(ISTART<0)THEN
-                NRTN(I)=-ISTART*NRTN(I)
+                AC%BVP%NRTN(I)=-ISTART*AC%BVP%NRTN(I)
              ENDIF
-             XEQUIB2(I)=XEQUIB2(I)+PI(2.d0)*NRTN(I)
+             XEQUIB2(I)=XEQUIB2(I)+PI(2.d0)*AC%BVP%NRTN(I)
           ENDIF
        ENDDO
     ELSEIF(IEQUIB.GE.0) THEN
@@ -720,7 +719,7 @@ CONTAINS
     ! Generates the boundary conditions for continuation of folds for
     ! homoclinic bifurcation analysis
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     INTEGER, INTENT(IN) :: NDIM,ICP(*),NBC,IJAC
     DOUBLE PRECISION, INTENT(INOUT) :: U0(NDIM),U1(NDIM),PAR(*)
     DOUBLE PRECISION, INTENT(OUT) :: F(NBC)
@@ -927,7 +926,7 @@ CONTAINS
     IF (ISTART==5) THEN
        ISTART=1
        IF(IRS/=0)THEN
-          IPS3=GETIPS3()
+          IPS3=GETIPS3(AC)
           IF(IPS3/=9.AND.IPS3/=0)THEN
              ISTART=4
           ENDIF
@@ -1036,7 +1035,7 @@ CONTAINS
   END SUBROUTINE INTPHO
 
 ! ---------- ------
-  SUBROUTINE TRANHO(NTSR,NCOLRS,NDM,NDIM,TM,UPS,UDOTPS,PAR,ICP,NPAR)
+  SUBROUTINE TRANHO(AC,NTSR,NCOLRS,NDM,NDIM,TM,UPS,UDOTPS,PAR,ICP,NPAR)
 
     ! Transform the data representation of the homoclinic orbit into
     ! an object suitable for homoclinic branch switching:
@@ -1052,9 +1051,9 @@ CONTAINS
 
     ! Called by PREHO
 
-    USE BVP, ONLY: NRTN,IRTN
     USE SUPPORT, ONLY: PI
     USE INTERFACES, ONLY: FUNC
+    TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
     INTEGER, INTENT(IN) :: NCOLRS,NDM,NDIM,ICP(*),NPAR
     INTEGER, INTENT(INOUT) :: NTSR
     DOUBLE PRECISION, INTENT(INOUT) :: TM(0:*), UPS(NDIM,0:*), &
@@ -1081,15 +1080,15 @@ CONTAINS
           JMAX=J
        ENDIF
     ENDDO
-    IF(IRTN/=0)THEN
+    IF(AC%BVP%IRTN/=0)THEN
        ! Just use the point in the middle
        UPSMAX = 0
        DO I=1,NDM
-          IF(NRTN(I)/=0)EXIT
+          IF(AC%BVP%NRTN(I)/=0)EXIT
        ENDDO
        DO J=0,NTSR
           D1=ABS(UPS(I,J*NCOLRS)-PAR(I+11))
-          UPSI=ABS(UPS(I,J*NCOLRS)-(PAR(I+11)+PI(2.d0)*NRTN(I)))
+          UPSI=ABS(UPS(I,J*NCOLRS)-(PAR(I+11)+PI(2.d0)*AC%BVP%NRTN(I)))
           IF(D1<UPSI)UPSI=D1
           IF(UPSI>UPSMAX)THEN
              UPSMAX=UPSI
@@ -1153,9 +1152,9 @@ CONTAINS
           JJ=J*NCOLRS+K
           LL=L*NCOLRS+K
           DO I=1,NDM
-             IF(IRTN/=0)THEN
+             IF(AC%BVP%IRTN/=0)THEN
                 PHDIFF=0
-                IF(IADDPH/=0)PHDIFF=PI(2.d0)*NRTN(MOD(I-1,NDM)+1)
+                IF(IADDPH/=0)PHDIFF=PI(2.d0)*AC%BVP%NRTN(MOD(I-1,NDM)+1)
              ENDIF
              UPS(I+NDM,LL)=UPS(I,JJ)+PHDIFF
              UDOTPS(I+NDM,LL)=UDOTPS(I,JJ)+PHDIFF
@@ -1164,8 +1163,8 @@ CONTAINS
              IF (L<2*NTSR-JMAX) THEN
                 ! move J=JMAX...NTSR to
                 !  L+JMAX=NTSR-1+JMAX...2*NTSR-1
-                IF(IRTN/=0)THEN
-                   PHDIFF=PI(2.d0)*NRTN(MOD(I-1,NDM)+1)*(-ISTART-1)
+                IF(AC%BVP%IRTN/=0)THEN
+                   PHDIFF=PI(2.d0)*AC%BVP%NRTN(MOD(I-1,NDM)+1)*(-ISTART-1)
                 ENDIF
                 LLL=LL+JMAX*NCOLRS
                 IF(L==2*NTSR-JMAX-1)THEN
@@ -1228,8 +1227,8 @@ CONTAINS
        DO K2=NDM,NDIM-3*NDM,NDM
           DO K=0,NCOLRS-1
              DO I=NDM+1,2*NDM
-                IF(IRTN/=0)THEN
-                   PHDIFF=PI(2.d0)*NRTN(MOD(I-1,NDM)+1)*(K2/NDM)
+                IF(AC%BVP%IRTN/=0)THEN
+                   PHDIFF=PI(2.d0)*AC%BVP%NRTN(MOD(I-1,NDM)+1)*(K2/NDM)
                 ENDIF
                 UPS(I+K2,JJ+K)=UPS(I,JJ+K)+PHDIFF
                 UDOTPS(I+K2,JJ+K)=UDOTPS(I,JJ+K)+PHDIFF
@@ -1247,7 +1246,7 @@ CONTAINS
 
     NTNC=NTSR*NCOLRS
     DO I=1,NDM
-       IF(IRTN/=0)PHDIFF=PI(2.d0)*NRTN(I)
+       IF(AC%BVP%IRTN/=0)PHDIFF=PI(2.d0)*AC%BVP%NRTN(I)
        DO K2=I,NDIM-NDM,NDM
           P=PHDIFF*((K2-I)/NDM-1)
           UPS(K2,NTNC)=UPS(I+NDM,NTNC+NCOLRS)+P
@@ -1259,8 +1258,8 @@ CONTAINS
 
     ! Rotations: NRTN needs adjustment
 
-    IF(IRTN/=0)THEN
-       NRTN(1:NDM)=NRTN(1:NDM)*(-ISTART)
+    IF(AC%BVP%IRTN/=0)THEN
+       AC%BVP%NRTN(1:NDM)=AC%BVP%NRTN(1:NDM)*(-ISTART)
     ENDIF
     DEALLOCATE(TTM)
   END SUBROUTINE TRANHO
@@ -1324,25 +1323,28 @@ CONTAINS
   END SUBROUTINE CPBKHO
 
 ! ---------- -----
-  SUBROUTINE PREHO(AP,PAR,ICP,NTSR,NAR,NCOLRS,UPS,UDOTPS,TM)
+  SUBROUTINE PREHO(AC,PAR,ICP,NTSR,NAR,NCOLRS,UPS,UDOTPS,TM)
 
     ! Special homoclinic orbit preprocessing.
 
-    USE BVP, ONLY: IRTN,NRTN,SETRTN
+    USE BVP, ONLY: SETRTN
     USE SUPPORT, ONLY: PI
     USE INTERFACES, ONLY: FUNC
 
-    TYPE(AUTOPARAMETERS), INTENT(IN) :: AP
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET::AC
+    TYPE(AUTOPARAMETERS), POINTER:: AP
     INTEGER, INTENT(IN) :: ICP(*),NCOLRS
     INTEGER, INTENT(INOUT) :: NTSR,NAR
-    DOUBLE PRECISION, INTENT(INOUT) :: UPS(AP%NDIM,0:NTSR*NCOLRS), &
-         TM(0:NTSR),UDOTPS(AP%NDIM,0:NTSR*NCOLRS),PAR(*)
+    DOUBLE PRECISION, INTENT(INOUT) :: UPS(AC%AP%NDIM,0:NTSR*NCOLRS), &
+         TM(0:NTSR),UDOTPS(AC%AP%NDIM,0:NTSR*NCOLRS),PAR(*)
 
     ! Local
 
     DOUBLE PRECISION, ALLOCATABLE :: F(:)
     INTEGER NDIM,NDM,NPAR,II,IT,IST,I,J,J1,J2,JMIN,JR
     DOUBLE PRECISION T,TMMIN,UPSI,UPSMIN,DUM1(1),DUM2(1)
+
+    AP=>AC%AP
 
     NDIM=AP%NDIM
     NDM=AP%NDM
@@ -1354,20 +1356,20 @@ CONTAINS
     ENDIF
     ! Look for rotations
     IF(IEQUIB.GE.0)THEN
-       CALL SETRTN(NDM,NTSR*NCOLRS,NDIM,UPS)
+       CALL SETRTN(AC,NDM,NTSR*NCOLRS,NDIM,UPS)
     ENDIF
     IF (ISTART<0 .AND. .NOT.(NAR<NDIM .AND. NAR<3*NDM)) THEN
        !    Adjust rotations
-       IF(IRTN==0)ALLOCATE(NRTN(NDM))
-       IRTN=0
+       IF(AC%BVP%IRTN==0)ALLOCATE(AC%BVP%NRTN(NDM))
+       AC%BVP%IRTN=0
        DO I=1,NDM
-          NRTN(I)=NINT( (UPS(NAR-NDM+I,NTSR*NCOLRS)-UPS(I,0)) / &
+          AC%BVP%NRTN(I)=NINT( (UPS(NAR-NDM+I,NTSR*NCOLRS)-UPS(I,0)) / &
                (PI(2.d0) * (-ISTART)) )
-          IF(NRTN(I)/=0)THEN
-             IRTN=1
+          IF(AC%BVP%NRTN(I)/=0)THEN
+             AC%BVP%IRTN=1
           ENDIF
        ENDDO
-       IF(IRTN==0)DEALLOCATE(NRTN)
+       IF(AC%BVP%IRTN==0)DEALLOCATE(AC%BVP%NRTN)
     ENDIF
 
     ! Shift phase if necessary if continuing from
@@ -1506,12 +1508,12 @@ CONTAINS
 
           ! Rotations
 
-          IF(IRTN/=0)THEN
+          IF(AC%BVP%IRTN/=0)THEN
              JR=-1
              ntsrloop: DO J=0,NTSR*NCOLRS,NCOLRS
                 DO I=1,NDM
-                   IF(NRTN(I)/=0) THEN
-                      IF(ABS((UPS(I,J+NCOLRS)-UPS(I,J))/NRTN(I))>ABS(PI(1d0)))&
+                   IF(AC%BVP%NRTN(I)/=0) THEN
+                      IF(ABS((UPS(I,J+NCOLRS)-UPS(I,J))/AC%BVP%NRTN(I))>ABS(PI(1d0)))&
                            THEN
                          JR=J+NCOLRS
                          EXIT ntsrloop
@@ -1521,9 +1523,9 @@ CONTAINS
              ENDDO ntsrloop
              IF(JR/=-1)THEN
                 DO I=1,NDIM
-                   IF (NRTN(I)/=0) THEN
+                   IF (AC%BVP%NRTN(I)/=0) THEN
                       DO J=JR,NTSR*NCOLRS
-                         UPS(I,J)=UPS(I,J)+PI(2.d0)*NRTN(I)
+                         UPS(I,J)=UPS(I,J)+PI(2.d0)*AC%BVP%NRTN(I)
                       ENDDO
                    ENDIF
                 ENDDO
@@ -1538,7 +1540,7 @@ CONTAINS
     ! UDOTPS.
 
     IF (ISTART<0 .AND. NAR<NDIM .AND. NAR<3*NDM) THEN
-       CALL TRANHO(NTSR,NCOLRS,NDM,NDIM,TM,UPS,UDOTPS,PAR,ICP,NPAR)
+       CALL TRANHO(AC,NTSR,NCOLRS,NDM,NDIM,TM,UPS,UDOTPS,PAR,ICP,NPAR)
     ELSEIF (ISTART<0 .AND. NAR<NDIM .AND. NAR.GE.3*NDM) THEN
        ! Copy forelast part
        DO J=0,NTSR*NCOLRS
@@ -1583,7 +1585,7 @@ CONTAINS
     ! If ISTART=2 it calls STPNBV (STPNUB).
     ! If ISTART=3 it sets up the homotopy method.
 
-    TYPE(AUTOCONTEXT), INTENT(IN),TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT),TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
@@ -1609,7 +1611,7 @@ CONTAINS
        ! ** Fold continuation (start).
        CALL STPNBL(AC,PAR,ICP,NTSR,NCOLRS,RLDOT,UPS,UDOTPS,TM,NODIR)
        IF(IEQUIB.GE.0)THEN
-          CALL SETRTN(NDM,NTSR*NCOLRS,NDIM,UPS)
+          CALL SETRTN(AC,NDM,NTSR*NCOLRS,NDIM,UPS)
        ENDIF
     ELSEIF(IRS>0)THEN
 
@@ -1621,7 +1623,7 @@ CONTAINS
        ! Autodetect special case when homoclinic branch switching is
        ! completed and the orbit's representation has to be
        ! changed.
-       NDIM3=GETNDIM3()
+       NDIM3=GETNDIM3(AC)
        IF(NDIM3>(NDM*2).AND.NDIM3>NDIM)THEN
           NTSTCU=NTSR*(NDIM3/NDM)*NCOLRS
           NDIMU=NDIM3
@@ -1629,7 +1631,7 @@ CONTAINS
        ALLOCATE(UPSR(NDIMU,0:NTSTCU),UDOTPSR(NDIMU,0:NTSTCU),TMR(0:NTSTCU))
        CALL STPNBV1(AC,PAR,ICP,NDIMU,NTSR,NDIMRD,NCOLRS,RLDOT, &
             UPSR,UDOTPSR,TMR,NODIR)
-       CALL PREHO(AP,PAR,ICP,NTSR,NDIMRD,NCOLRS,UPSR,UDOTPSR,TMR)
+       CALL PREHO(AC,PAR,ICP,NTSR,NDIMRD,NCOLRS,UPSR,UDOTPSR,TMR)
        CALL ADAPT2(NTSR,NCOLRS,NDIMU,NTST,NCOL,NDIM, &
             TMR,UPSR,UDOTPSR,TM,UPS,UDOTPS,.FALSE.)
        DEALLOCATE(TMR,UPSR,UDOTPSR)
@@ -1642,7 +1644,7 @@ CONTAINS
        ! Initialize solution and additional parameters
 
        IF(IEQUIB.GE.0)THEN
-          CALL SETRTN(NDM,NTSR*NCOLRS,NDIM,UPS)
+          CALL SETRTN(AC,NDM,NTSR*NCOLRS,NDIM,UPS)
        ENDIF
     ENDIF
 

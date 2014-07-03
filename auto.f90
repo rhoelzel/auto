@@ -4,7 +4,7 @@
       USE ISO_C_BINDING
       USE AUTOMPI
       USE IO
-      USE SUPPORT, ONLY:AP=>AV, NAMEIDX, AUTOSTOP
+      USE SUPPORT, ONLY: NAMEIDX, AUTOSTOP
       USE AUTO_TYPES,ONLY: AUTOCONTEXT, AUTOPARAMETERS, NPARX
 !$    USE OMP_LIB
       USE COMPAT
@@ -36,8 +36,10 @@
       AC%BUNIT=ID*4+5
       AC%DUNIT=ID*4+6
 
-! Get Fortran string filename from character array in CFILE
+      AC%IO%MBR=0
+      AC%IO%MLAB=0
 
+! Get Fortran string filename from character array in CFILE
 
       DO I=1,8
          FILENO(I:I)=CFILENO(I)
@@ -87,7 +89,7 @@
 !$           TIME1=omp_get_wtime()
           ENDIF
           TOTTIM=TIME1-TIME0
-          IF(AP%IID>0)THEN
+          IF(AC%AP%IID>0)THEN
              CALL WRBAR(AC,"=",47)
              WRITE(AC%DUNIT,301)TOTTIM
           ENDIF
@@ -128,7 +130,7 @@
 ! or stop otherwise
 
       IMPLICIT NONE
-      TYPE(AUTOCONTEXT), TARGET :: AC
+      TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
       TYPE(AUTOPARAMETERS), POINTER :: AP
       INTEGER, INTENT(IN) :: UNITC
 
@@ -138,8 +140,6 @@
       AP=>AC%AP
 
       IRS=AP%IRS
-
-      WRITE (*,*) IRS
 
       FOUND=.FALSE.
       IF(IRS/=0) THEN
@@ -168,7 +168,7 @@
       USE TIMEINT
 
       IMPLICIT NONE
-      TYPE(AUTOCONTEXT), TARGET :: AC
+      TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
       TYPE(AUTOPARAMETERS), POINTER :: AP
       INTEGER ICU(AC%AP%NICP)
 
@@ -249,7 +249,7 @@
 
       IMPLICIT NONE
 
-      TYPE(AUTOCONTEXT), INTENT(OUT), TARGET :: AC
+      TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
       TYPE(AUTOPARAMETERS), POINTER :: AP
       INTEGER, INTENT(IN) :: UNITC
       LOGICAL, INTENT(OUT) :: EOF
@@ -451,7 +451,7 @@
 !   NINT: set by problem type
 !   NMX: set to 5 for starts of extended systems
 
-      TYPE(AUTOCONTEXT), TARGET :: AC
+      TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
       TYPE(AUTOPARAMETERS), POINTER :: AP
 
 ! Local

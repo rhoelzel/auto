@@ -34,7 +34,7 @@
 ! Sets up and solves the linear equations for one Newton/Chord iteration
 
       include 'interfaces.h'
-      TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+      TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
       TYPE(AUTOPARAMETERS), POINTER :: AP
       INTEGER IFST,NLLV,ICP(*),NDIM
       DOUBLE PRECISION, INTENT(OUT) :: DET
@@ -223,7 +223,7 @@
 
       include 'interfaces.h'
 
-      TYPE(AUTOCONTEXT), INTENT(IN) :: AC
+      TYPE(AUTOCONTEXT), INTENT(INOUT) :: AC
       INTEGER NDIM,NTNC,NBC,NCB,ICP(*),IFST,NPAR
       DOUBLE PRECISION CDBC(2*NDIM+NCB,NBC)
       DOUBLE PRECISION UPS(NDIM,0:NTNC),FC(*),PAR(*)

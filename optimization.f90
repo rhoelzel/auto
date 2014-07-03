@@ -648,7 +648,7 @@ CONTAINS
 
     ! Generates starting data for optimization of periodic solutions.
 
-    TYPE(AUTOCONTEXT), INTENT(IN), TARGET :: AC
+    TYPE(AUTOCONTEXT), INTENT(INOUT), TARGET :: AC
     TYPE(AUTOPARAMETERS), POINTER :: AP
     INTEGER, INTENT(IN) :: ICP(*)
     INTEGER, INTENT(INOUT) :: NTSR,NCOLRS
