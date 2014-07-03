@@ -14,20 +14,7 @@ MODULE HOMCONT
 
   IMPLICIT NONE
 
-  PRIVATE
-
   PUBLIC :: AUTOHO,INSTRHO
-
-! This common block is also used by demos: don't remove it!!
-! Also, don't use the common variables in FNHO and ICHO because 
-! the MPI code does not transfer them.
-
-  INTEGER ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV
-  COMMON /BLHOM/ ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV
-
-  INTEGER, ALLOCATABLE, TARGET :: IREV(:),IFIXED(:),IPSI(:)
-  LOGICAL, SAVE :: INITCNST=.FALSE.
-  DOUBLE PRECISION, SAVE :: COMPZERO
 
   DOUBLE PRECISION, PARAMETER :: HMACH=1.0d-7
 
@@ -185,7 +172,7 @@ CONTAINS
     DO I=1,NFPR
        DFDP(1:NDM,ICP(I))=DFP(:,ICP(I))
     ENDDO
-    IF(IEQUIB<0)THEN
+    IF(AC%HOMCONT%IEQUIB<0)THEN
        ! heteroclinic equilibrium parameters
        IEQMAX=11+NDM*2
     ELSE
@@ -397,7 +384,7 @@ CONTAINS
     ENDDO
     JB = 1
 
-    IF ((IEQUIB==0).OR.(IEQUIB==-1)) THEN
+    IF ((AC%HOMCONT%IEQUIB==0).OR.(AC%HOMCONT%IEQUIB==-1)) THEN
        CALL PVLS(NDM,U0,PAR)
     ENDIF
     !          write(9,*) 'Xequib:'
@@ -410,13 +397,13 @@ CONTAINS
        DO I=1,NDM
           XEQUIB2(I)=XEQUIB1(I)
           IF(AC%BVP%NRTN(I)/=0)THEN
-             IF(ISTART<0)THEN
-                AC%BVP%NRTN(I)=-ISTART*AC%BVP%NRTN(I)
+             IF(AC%HOMCONT%ISTART<0)THEN
+                AC%BVP%NRTN(I)=-AC%HOMCONT%ISTART*AC%BVP%NRTN(I)
              ENDIF
              XEQUIB2(I)=XEQUIB2(I)+PI(2.d0)*AC%BVP%NRTN(I)
           ENDIF
        ENDDO
-    ELSEIF(IEQUIB.GE.0) THEN
+    ELSEIF(AC%HOMCONT%IEQUIB.GE.0) THEN
        DO I=1,NDM
           XEQUIB2(I)=PAR(11+I)
        ENDDO
@@ -427,11 +414,11 @@ CONTAINS
     ENDIF
 
     ! **Regular Continuation**
-    IF(ISTART/=3) THEN
+    IF(AC%HOMCONT%ISTART/=3) THEN
        !    *Projection boundary conditions for the homoclinic orbit
        !    *NSTAB boundary conditions at t=0
        CALL PRJCTN(AC,BOUND,CSAVE,XEQUIB1,ICP,PAR,-1,1,1,NDM)
-       DO I=1,NSTAB
+       DO I=1,AC%HOMCONT%NSTAB
           DO K=1,NDM
              FB(JB)=FB(JB)+(U0(K)-XEQUIB1(K))*BOUND(K,I)
           ENDDO
@@ -441,13 +428,13 @@ CONTAINS
        !    *NUNSTAB boundary conditions at t=1
        IF(AP%NREV==0) THEN
           CALL PRJCTN(AC,BOUND,CSAVE,XEQUIB2,ICP,PAR,1,2,1,NDM)
-          DO I=1,NUNSTAB
+          DO I=1,AC%HOMCONT%NUNSTAB
              DO K=1,NDM
-                IF (ISTART.GE.0) THEN
+                IF (AC%HOMCONT%ISTART.GE.0) THEN
                    FB(JB)=FB(JB)+(U1(K)-XEQUIB2(K))*BOUND(K,I)
                 ELSE
                    FB(JB)=FB(JB)+(U1(NDIM-NDM+K)-XEQUIB2(K))*BOUND(K,I)
-                   IF (ITWIST==0) THEN
+                   IF (AC%HOMCONT%ITWIST==0) THEN
                       !                 allow jump at end.
                       FB(JB)=FB(JB)+PAR(22)
                    ENDIF
@@ -459,7 +446,7 @@ CONTAINS
           !     *NUNSTAB symmetric boundary conditions at t=1 if NREV=1
 
           DO I=1,NDIM
-             IF(IREV(I)>0) THEN
+             IF(AC%HOMCONT%IREV(I)>0) THEN
                 FB(JB)=U1(I)  
                 JB=JB+1
              ENDIF
@@ -467,48 +454,48 @@ CONTAINS
        ENDIF
        INEIG=.FALSE.
        !    *NFIXED extra boundary conditions for the fixed conditions
-       IF (NFIXED>0) THEN
+       IF (AC%HOMCONT%NFIXED>0) THEN
           CALL EIGHO(AC,2,RR(1,1),RI(1,1),VR(1,1,1),XEQUIB1,ICP,PAR,NDM)
-          IF(IEQUIB<0) THEN
+          IF(AC%HOMCONT%IEQUIB<0) THEN
              CALL EIGHO(AC,2,RR(1,2),RI(1,2),VR(1,1,2),XEQUIB2,ICP,PAR,NDM)
           ENDIF
-          DO I=1,NFIXED
-             IF((IFIXED(I)>10).AND..NOT.INEIG) THEN
+          DO I=1,AC%HOMCONT%NFIXED
+             IF((AC%HOMCONT%IFIXED(I)>10).AND..NOT.INEIG) THEN
                 CALL EIGHO(AC,1,RR(1,1),RI(1,1),VT(1,1,1),XEQUIB1,ICP,PAR,NDM)
                 INEIG=.TRUE.
-                IF(IEQUIB<0) THEN
+                IF(AC%HOMCONT%IEQUIB<0) THEN
                    CALL EIGHO(AC,1,RR(1,2),RI(1,2),VT(1,1,2), &
                         XEQUIB2,ICP,PAR,NDM)
                 ENDIF
              ENDIF
-             FB(JB)=PSIHO(NDM,IFIXED(I),RR,RI,VR,VT,ICP,PAR,U0,U1)
+             FB(JB)=PSIHO(AC,NDM,AC%HOMCONT%IFIXED(I),RR,RI,VR,VT,ICP,PAR,U0,U1)
              JB = JB+1 
           ENDDO
        ENDIF
        !    *extra boundary condition in the case of a saddle-node homoclinic
-       IF (IEQUIB==2) THEN
+       IF (AC%HOMCONT%IEQUIB==2) THEN
           IF(.NOT.INEIG) THEN
              CALL EIGHO(AC,1,RR(1,1),RI(1,1),VT(1,1,1),XEQUIB1,ICP,PAR,NDM)
              INEIG=.TRUE.
           ENDIF
-          FB(JB)=RR(NSTAB+1,1)
+          FB(JB)=RR(AC%HOMCONT%NSTAB+1,1)
           JB=JB+1
        ENDIF
        !    *NDM initial conditions for the equilibrium if IEQUIB=1,2,-2
-       IF ((IEQUIB/=0).AND.(IEQUIB/=-1)) THEN
+       IF ((AC%HOMCONT%IEQUIB/=0).AND.(AC%HOMCONT%IEQUIB/=-1)) THEN
           CALL FUNC(NDM,XEQUIB1,ICP,PAR,0,FB(JB),DUM1,DUM2)
           JB=JB+NDM
           !    *NDM extra initial conditions for the equilibrium if IEQUIB=-2
-          IF (IEQUIB==-2) THEN
+          IF (AC%HOMCONT%IEQUIB==-2) THEN
              CALL FUNC(NDM,XEQUIB2,ICP,PAR,0,FB(JB),DUM1,DUM2)
              JB=JB+NDM
           ENDIF
        ENDIF
        !    *boundary conditions for normal vector
-       IF ((ISTART.GE.0).AND.(ITWIST==1)) THEN
+       IF ((AC%HOMCONT%ISTART.GE.0).AND.(AC%HOMCONT%ITWIST==1)) THEN
           !       *-orthogonal to the unstable directions of A  at t=0
           CALL PRJCTN(AC,BOUND,CSAVE,XEQUIB1,ICP,PAR,1,1,2,NDM)
-          DO I=1,NUNSTAB
+          DO I=1,AC%HOMCONT%NUNSTAB
              DUM=0.0
              DO K=1,NDM
                 DUM=DUM+U0(NDM+K)*BOUND(K,I)
@@ -518,7 +505,7 @@ CONTAINS
           ENDDO
           !       *-orthogonal to the stable directions of A  at t=1
           CALL PRJCTN(AC,BOUND,CSAVE,XEQUIB2,ICP,PAR,-1,2,2,NDM)
-          DO I=1,NSTAB
+          DO I=1,AC%HOMCONT%NSTAB
              DUM=0.0
              DO K=1,NDM
                 DUM=DUM+U1(NDM+K)*BOUND(K,I)
@@ -527,12 +514,12 @@ CONTAINS
              JB = JB+1
           ENDDO
           !  Branch switching to n-homoclinic orbits.
-       ELSEIF(ISTART<0) THEN
+       ELSEIF(AC%HOMCONT%ISTART<0) THEN
           !     More boundary conditions: continuity+gaps
           DO K=0,NDIM/NDM-2
              DO I=1,NDM
                 FB(JB)=U0(NDM*(K+1)+I)-U1(NDM*K+I)
-                IF (ITWIST==1) THEN 
+                IF (AC%HOMCONT%ITWIST==1) THEN 
                    ! Lin(-Sandstede): PAR(20,22,...) contain the gap sizes,
                    ! PAR(NPAR-2*NDM+1...NPAR-NDM) contains the adjoint unit
                    ! vector at the gaps.
@@ -563,7 +550,7 @@ CONTAINS
     ELSE
        ! **Starting Solutions using Homotopy**
        IP=12
-       IF(IEQUIB.GE.0) THEN 
+       IF(AC%HOMCONT%IEQUIB.GE.0) THEN 
           IP=IP+NDM
        ELSE
           IP=IP+2*NDM
@@ -572,12 +559,12 @@ CONTAINS
        !    *Explicit boundary conditions for homoclinic orbit at t=0
        CALL EIGHO(AC,2,RR,RI,VR,XEQUIB1,ICP,PAR,NDM)
        JB=NDM+1
-       IF(NUNSTAB>1) THEN
+       IF(AC%HOMCONT%NUNSTAB>1) THEN
           FB(JB)=0.0
-          KP=IP+NUNSTAB
-          DO J=1,NUNSTAB
+          KP=IP+AC%HOMCONT%NUNSTAB
+          DO J=1,AC%HOMCONT%NUNSTAB
              DO I=1,NDM
-                FB(I)=FB(I)+U0(I)-XEQUIB1(I)-PAR(IP+J)*VR(NDM-NUNSTAB+J,I,1)
+                FB(I)=FB(I)+U0(I)-XEQUIB1(I)-PAR(IP+J)*VR(NDM-AC%HOMCONT%NUNSTAB+J,I,1)
              ENDDO
              FB(JB)=FB(JB)+PAR(IP+J)**2
           ENDDO
@@ -586,12 +573,12 @@ CONTAINS
        ELSE
           KP=IP+1
           DO I=1,NDM
-             FB(I)=U0(I)-XEQUIB1(I)-PAR(IP)*VR(NDM-NUNSTAB+1,I,1)
+             FB(I)=U0(I)-XEQUIB1(I)-PAR(IP)*VR(NDM-AC%HOMCONT%NUNSTAB+1,I,1)
           ENDDO
        ENDIF
        !    *Projection boundary conditions for the homoclinic orbit at t=1
        CALL EIGHO(AC,1,RR,RI,VT,XEQUIB2,ICP,PAR,NDM)
-       DO I=NDM-NUNSTAB+1,NDM
+       DO I=NDM-AC%HOMCONT%NUNSTAB+1,NDM
           DUM=0.0D0
           DO J=1,NDM
              DUM=DUM+(U1(J)-XEQUIB2(J))*VT(I,J,1)
@@ -601,11 +588,11 @@ CONTAINS
           JB=JB+1
        ENDDO
        !    *NDM initial conditions for the equilibrium if IEQUIB=1,2,-2
-       IF ((IEQUIB/=0).AND.(IEQUIB/=-1)) THEN
+       IF ((AC%HOMCONT%IEQUIB/=0).AND.(AC%HOMCONT%IEQUIB/=-1)) THEN
           CALL FUNC(NDM,XEQUIB1,ICP,PAR,0,FB(JB),DUM1,DUM2)
           JB=JB+NDM
           !    *NDM extra initial conditions for the equilibrium if IEQUIB=-2
-          IF (IEQUIB==-2) THEN
+          IF (AC%HOMCONT%IEQUIB==-2) THEN
              CALL FUNC(NDM,XEQUIB2,ICP,PAR,0,FB(JB),DUM1,DUM2)
              JB=JB+NDM
           ENDIF
@@ -747,8 +734,9 @@ CONTAINS
   END SUBROUTINE ICHOL
 
 ! ---------- -------
-  SUBROUTINE INSTRHO(KEYSTR,VALSTR,LISTLEN,IERR)
+  SUBROUTINE INSTRHO(AC,KEYSTR,VALSTR,LISTLEN,IERR)
 
+    TYPE(AUTOCONTEXT), INTENT(INOUT)::AC
     CHARACTER(LEN=*), INTENT(IN) :: KEYSTR, VALSTR
     INTEGER, INTENT(IN) :: LISTLEN
     INTEGER, INTENT(OUT) :: IERR
@@ -757,45 +745,37 @@ CONTAINS
     ! read HomCont constants from a string
 
     IERR = 0
-    IF(.NOT.INITCNST)THEN
-       NUNSTAB=-1
-       NSTAB=-1
-       IEQUIB=1
-       ITWIST=0
-       ISTART=5 ! default is 1 or 4 depending on IPS from solution
-       NREV=0
-       NFIXED=0
-       NPSI=0
-       ALLOCATE(IREV(0),IFIXED(0),IPSI(0))
+    IF(.NOT.AC%HOMCONT%INITCNST)THEN
+       ALLOCATE(AC%HOMCONT%IREV(0),AC%HOMCONT%IFIXED(0),AC%HOMCONT%IPSI(0))
     ENDIF
-    INITCNST = .TRUE.
+    AC%HOMCONT%INITCNST = .TRUE.
     SELECT CASE(KEYSTR)
     CASE('NUNSTAB')
-       READ(VALSTR,*,ERR=3)NUNSTAB
+       READ(VALSTR,*,ERR=3)AC%HOMCONT%NUNSTAB
     CASE('NSTAB')
-       READ(VALSTR,*,ERR=3)NSTAB
+       READ(VALSTR,*,ERR=3)AC%HOMCONT%NSTAB
     CASE('IEQUIB')
-       READ(VALSTR,*,ERR=3)IEQUIB
+       READ(VALSTR,*,ERR=3)AC%HOMCONT%IEQUIB
     CASE('ISTART')
-       READ(VALSTR,*,ERR=3)ISTART
+       READ(VALSTR,*,ERR=3)AC%HOMCONT%ISTART
     CASE('ITWIST')
-       READ(VALSTR,*,ERR=3)ITWIST
+       READ(VALSTR,*,ERR=3)AC%HOMCONT%ITWIST
     CASE('IREV')
        NDIM=LISTLEN
-       IF(ALLOCATED(IREV))DEALLOCATE(IREV)
-       ALLOCATE(IREV(NDIM))
-       READ(VALSTR,*,ERR=3)(IREV(I),I=1,NDIM)
-       NREV=1
+       IF(ALLOCATED(AC%HOMCONT%IREV))DEALLOCATE(AC%HOMCONT%IREV)
+       ALLOCATE(AC%HOMCONT%IREV(NDIM))
+       READ(VALSTR,*,ERR=3)(AC%HOMCONT%IREV(I),I=1,NDIM)
+       AC%HOMCONT%NREV=1
     CASE('IFIXED')
-       NFIXED=LISTLEN
-       IF(ALLOCATED(IFIXED))DEALLOCATE(IFIXED)
-       ALLOCATE(IFIXED(NFIXED))
-       READ(VALSTR,*,ERR=3)(IFIXED(I),I=1,NFIXED)
+       AC%HOMCONT%NFIXED=LISTLEN
+       IF(ALLOCATED(AC%HOMCONT%IFIXED))DEALLOCATE(AC%HOMCONT%IFIXED)
+       ALLOCATE(AC%HOMCONT%IFIXED(AC%HOMCONT%NFIXED))
+       READ(VALSTR,*,ERR=3)(AC%HOMCONT%IFIXED(I),I=1,AC%HOMCONT%NFIXED)
     CASE('IPSI')
-       NPSI=LISTLEN
-       IF(ALLOCATED(IPSI))DEALLOCATE(IPSI)
-       ALLOCATE(IPSI(NPSI))
-       READ(VALSTR,*,ERR=3)(IPSI(I),I=1,NPSI)
+       AC%HOMCONT%NPSI=LISTLEN
+       IF(ALLOCATED(AC%HOMCONT%IPSI))DEALLOCATE(AC%HOMCONT%IPSI)
+       ALLOCATE(AC%HOMCONT%IPSI(AC%HOMCONT%NPSI))
+       READ(VALSTR,*,ERR=3)(AC%HOMCONT%IPSI(I),I=1,AC%HOMCONT%NPSI)
     CASE DEFAULT
        IERR = 1
     END SELECT
@@ -831,7 +811,7 @@ CONTAINS
     NBC=AP%NBC
     NINT=AP%NINT
     NDM=NDIM
-    COMPZERO=HMACHHO
+    AC%HOMCONT%COMPZERO=HMACHHO
 
     OPEN(UNIT=12,FILE='fort.12',STATUS='OLD',ACCESS='sequential',IOSTAT=stat)
     IF(STAT/=0)THEN
@@ -842,45 +822,47 @@ CONTAINS
        ENDIF
     ELSE
        LINE=1
-       READ(12,*,ERR=1,END=2)NUNSTAB,NSTAB,IEQUIB,ITWIST,ISTART
+       READ(12,*,ERR=1,END=2)AC%HOMCONT%NUNSTAB,&
+            AC%HOMCONT%NSTAB,AC%HOMCONT%IEQUIB,&
+            AC%HOMCONT%ITWIST,AC%HOMCONT%ISTART
 
        ! updated reading in of constants for reversible equations
        ! replaces location in datafile of compzero
 
-       IF(ALLOCATED(IREV))DEALLOCATE(IREV)
+       IF(ALLOCATED(AC%HOMCONT%IREV))DEALLOCATE(AC%HOMCONT%IREV)
        LINE=LINE+1
-       READ(12,*,ERR=1,END=2)NREV
-       IF(NREV>0)THEN
-          ALLOCATE(IREV(NDM))
+       READ(12,*,ERR=1,END=2)AC%HOMCONT%NREV
+       IF(AC%HOMCONT%NREV>0)THEN
+          ALLOCATE(AC%HOMCONT%IREV(NDM))
           LINE=LINE+1
-          READ(12,*,ERR=1,END=2)(IREV(I),I=1,NDM)
+          READ(12,*,ERR=1,END=2)(AC%HOMCONT%IREV(I),I=1,NDM)
        ELSE
-          ALLOCATE(IREV(0))
+          ALLOCATE(AC%HOMCONT%IREV(0))
        ENDIF
 
        LINE=LINE+1
-       READ(12,*,ERR=1,END=2)NFIXED
-       IF(ALLOCATED(IFIXED))DEALLOCATE(IFIXED)
-       ALLOCATE(IFIXED(NFIXED))
-       IF (NFIXED>0)THEN
+       READ(12,*,ERR=1,END=2)AC%HOMCONT%NFIXED
+       IF(ALLOCATED(AC%HOMCONT%IFIXED))DEALLOCATE(AC%HOMCONT%IFIXED)
+       ALLOCATE(AC%HOMCONT%IFIXED(AC%HOMCONT%NFIXED))
+       IF (AC%HOMCONT%NFIXED>0)THEN
           LINE=LINE+1
-          READ(12,*,ERR=1,END=2)(IFIXED(I),I=1,NFIXED)
+          READ(12,*,ERR=1,END=2)(AC%HOMCONT%IFIXED(I),I=1,AC%HOMCONT%NFIXED)
        ENDIF
        LINE=LINE+1
-       READ(12,*,ERR=1,END=2)NPSI
-       IF(ALLOCATED(IPSI))DEALLOCATE(IPSI)
-       ALLOCATE(IPSI(NPSI))
-       IF (NPSI>0)THEN
+       READ(12,*,ERR=1,END=2)AC%HOMCONT%NPSI
+       IF(ALLOCATED(AC%HOMCONT%IPSI))DEALLOCATE(AC%HOMCONT%IPSI)
+       ALLOCATE(AC%HOMCONT%IPSI(AC%HOMCONT%NPSI))
+       IF (AC%HOMCONT%NPSI>0)THEN
           LINE=LINE+1
-          READ(12,*,ERR=1,END=2)(IPSI(I),I=1,NPSI)
+          READ(12,*,ERR=1,END=2)(AC%HOMCONT%IPSI(I),I=1,AC%HOMCONT%NPSI)
        ENDIF
        CLOSE(UNIT=12,STATUS='KEEP')
     ENDIF
-    NFREE=2+NFIXED-NREV+NINT+NBC
-    IF (ISTART<0) THEN
+    NFREE=2+AC%HOMCONT%NFIXED-AC%HOMCONT%NREV+NINT+NBC
+    IF (AC%HOMCONT%ISTART<0) THEN
        !    n-homoclinic branch switching
-       NFREE=NFREE-ISTART-1
-       NDIM=NDM*(-ISTART+1)
+       NFREE=NFREE-AC%HOMCONT%ISTART-1
+       NDIM=NDM*(-AC%HOMCONT%ISTART+1)
        ! make sure there is enough room for the Lin vector etc.
        NPARI=2*NDM
        AP%NPARI=NPARI
@@ -889,12 +871,12 @@ CONTAINS
        ! nondegeneracy parameter of the adjoint
 
     ELSE
-       IF (NPSI>0) THEN
+       IF (AC%HOMCONT%NPSI>0) THEN
           NPAR=AP%NPAR
-          NPAR=MAX(20+MAXVAL(IPSI),NPAR)
+          NPAR=MAX(20+MAXVAL(AC%HOMCONT%IPSI),NPAR)
           AP%NPAR=NPAR
        ENDIF
-       IF (ITWIST==1) THEN
+       IF (AC%HOMCONT%ITWIST==1) THEN
           NFREE = NFREE + 1
           ICP(NFREE) = 10
           NDIM=NDM*2
@@ -903,79 +885,79 @@ CONTAINS
 
     ! Extra free parameters for equilibrium if iequib=1,2,-2
 
-    IF ((IEQUIB/=0).AND.(IEQUIB/=-1)) THEN
+    IF ((AC%HOMCONT%IEQUIB/=0).AND.(AC%HOMCONT%IEQUIB/=-1)) THEN
        DO I=1,NDM
           ICP(NFREE+I)=11+I
        ENDDO
     ENDIF
 
-    IF (IEQUIB==-2) THEN
+    IF (AC%HOMCONT%IEQUIB==-2) THEN
        DO I=1,NDM
           ICP(NFREE+NDM+I)=11+NDM+I
        ENDDO
     ENDIF
 
-    AC%HCONST%NUNSTAB=NUNSTAB
-    AC%HCONST%NSTAB=NSTAB
-    AC%HCONST%IEQUIB=IEQUIB
-    AC%HCONST%ITWIST=ITWIST
-    AC%HCONST%ISTART=ISTART
-    AC%HCONST%IREV=>IREV
-    AC%HCONST%IFIXED=>IFIXED
-    AC%HCONST%IPSI=>IPSI
-    IF (ISTART==5) THEN
-       ISTART=1
+    AC%HCONST%NUNSTAB=AC%HOMCONT%NUNSTAB
+    AC%HCONST%NSTAB=AC%HOMCONT%NSTAB
+    AC%HCONST%IEQUIB=AC%HOMCONT%IEQUIB
+    AC%HCONST%ITWIST=AC%HOMCONT%ITWIST
+    AC%HCONST%ISTART=AC%HOMCONT%ISTART
+    AC%HCONST%IREV=>AC%HOMCONT%IREV
+    AC%HCONST%IFIXED=>AC%HOMCONT%IFIXED
+    AC%HCONST%IPSI=>AC%HOMCONT%IPSI
+    IF (AC%HOMCONT%ISTART==5) THEN
+       AC%HOMCONT%ISTART=1
        IF(IRS/=0)THEN
           IPS3=GETIPS3(AC)
           IF(IPS3/=9.AND.IPS3/=0)THEN
-             ISTART=4
+             AC%HOMCONT%ISTART=4
           ENDIF
        ENDIF
     ENDIF
-    IF(NSTAB==-1.OR.NUNSTAB==-1)THEN
-       IF (IEQUIB==2) THEN
+    IF(AC%HOMCONT%NSTAB==-1.OR.AC%HOMCONT%NUNSTAB==-1)THEN
+       IF (AC%HOMCONT%IEQUIB==2) THEN
           NBCPROJ=NDM-1
        ELSE
           NBCPROJ=NDM
        ENDIF
     ELSE
-       NBCPROJ=NSTAB+NUNSTAB
+       NBCPROJ=AC%HOMCONT%NSTAB+AC%HOMCONT%NUNSTAB
     ENDIF
-    IF(NSTAB==-1.AND.NUNSTAB/=-1)THEN
-       NSTAB=NBCPROJ-NUNSTAB
-    ELSEIF(NUNSTAB==-1.AND.NSTAB/=-1)THEN
-       NUNSTAB=NBCPROJ-NSTAB
+    IF(AC%HOMCONT%NSTAB==-1.AND.AC%HOMCONT%NUNSTAB/=-1)THEN
+       AC%HOMCONT%NSTAB=NBCPROJ-AC%HOMCONT%NUNSTAB
+    ELSEIF(AC%HOMCONT%NUNSTAB==-1.AND.AC%HOMCONT%NSTAB/=-1)THEN
+       AC%HOMCONT%NUNSTAB=NBCPROJ-AC%HOMCONT%NSTAB
     ENDIF
 
-    IF (ISTART/=3) THEN
+    IF (AC%HOMCONT%ISTART/=3) THEN
        ! *regular continuation
-       IF (ISTART.GE.0) THEN
-          NINT=NINT+ITWIST+1-NREV
+       IF (AC%HOMCONT%ISTART.GE.0) THEN
+          NINT=NINT+AC%HOMCONT%ITWIST+1-AC%HOMCONT%NREV
        ENDIF
        IF (ISW==2.AND.AP%ITP/=5.AND.ABS(AP%ITP)/10/=5)THEN
           ICORR = 2
        ELSE
           ICORR = 1
        ENDIF
-       NBC=NBC+NBCPROJ+NDIM-NDM+IEQUIB*NDM+NFREE-NINT-ICORR
-       IF (IEQUIB==2) THEN
+       NBC=NBC+NBCPROJ+NDIM-NDM+AC%HOMCONT%IEQUIB*NDM+NFREE-NINT-ICORR
+       IF (AC%HOMCONT%IEQUIB==2) THEN
           NBC=NBC-NDM+1
        ENDIF
-       IF (IEQUIB<0) THEN
-          NBC=NBC-(3*IEQUIB+2)*NDM
+       IF (AC%HOMCONT%IEQUIB<0) THEN
+          NBC=NBC-(3*AC%HOMCONT%IEQUIB+2)*NDM
        ENDIF
     ELSE
        ! *starting solutions using homotopy
-       IF (ABS(NUNSTAB)==1) THEN
-          NBC=NDM*(1+IEQUIB)+1
+       IF (ABS(AC%HOMCONT%NUNSTAB)==1) THEN
+          NBC=NDM*(1+AC%HOMCONT%IEQUIB)+1
        ELSE
-          NBC=NDM*(1+IEQUIB)+NUNSTAB+1
+          NBC=NDM*(1+AC%HOMCONT%IEQUIB)+AC%HOMCONT%NUNSTAB+1
        ENDIF
-       IF (IEQUIB==2.AND.AP%IID>0) THEN 
+       IF (AC%HOMCONT%IEQUIB==2.AND.AP%IID>0) THEN 
           WRITE(9,*)'WARNING: IEQUIB=2 NOT ALLOWED WITH ISTART=3'
        ENDIF
-       IF (IEQUIB<0) THEN
-          NBC=NBC-NDM*(3*IEQUIB+2)
+       IF (AC%HOMCONT%IEQUIB<0) THEN
+          NBC=NBC-NDM*(3*AC%HOMCONT%IEQUIB+2)
        ENDIF
        NINT=0
     ENDIF
@@ -986,7 +968,7 @@ CONTAINS
     AP%NBC=NBC
     AP%NINT=NINT
     AP%NDM=NDM
-    AP%NREV=NREV
+    AP%NREV=AC%HOMCONT%NREV
 
     RETURN
 
@@ -1118,7 +1100,7 @@ CONTAINS
     ! PAR(NPAR-2*NDM+1...NPAR-NDM) will contain the adjoint unit
     ! vector at the gaps.
 
-    IF (ITWIST==1) THEN
+    IF (AC%HOMCONT%ITWIST==1) THEN
        DNORM=0.D0
        DO I=1,NDM
           PAR(NPAR-2*NDM+I)=UPS(NDM+I,JMAX*NCOLRS)
@@ -1164,7 +1146,7 @@ CONTAINS
                 ! move J=JMAX...NTSR to
                 !  L+JMAX=NTSR-1+JMAX...2*NTSR-1
                 IF(AC%BVP%IRTN/=0)THEN
-                   PHDIFF=PI(2.d0)*AC%BVP%NRTN(MOD(I-1,NDM)+1)*(-ISTART-1)
+                   PHDIFF=PI(2.d0)*AC%BVP%NRTN(MOD(I-1,NDM)+1)*(-AC%HOMCONT%ISTART-1)
                 ENDIF
                 LLL=LL+JMAX*NCOLRS
                 IF(L==2*NTSR-JMAX-1)THEN
@@ -1259,7 +1241,7 @@ CONTAINS
     ! Rotations: NRTN needs adjustment
 
     IF(AC%BVP%IRTN/=0)THEN
-       AC%BVP%NRTN(1:NDM)=AC%BVP%NRTN(1:NDM)*(-ISTART)
+       AC%BVP%NRTN(1:NDM)=AC%BVP%NRTN(1:NDM)*(-AC%HOMCONT%ISTART)
     ENDIF
     DEALLOCATE(TTM)
   END SUBROUTINE TRANHO
@@ -1350,21 +1332,21 @@ CONTAINS
     NDM=AP%NDM
     NPAR=AP%NPAR
 
-    IF (ISTART.GE.0.AND.NAR>2*NDM) THEN
+    IF (AC%HOMCONT%ISTART.GE.0.AND.NAR>2*NDM) THEN
        !    Use the usual representation again for normal continuation.
        CALL CPBKHO(NTSR,NCOLRS,NAR,NDM,TM,UPS,UDOTPS,PAR)
     ENDIF
     ! Look for rotations
-    IF(IEQUIB.GE.0)THEN
+    IF(AC%HOMCONT%IEQUIB.GE.0)THEN
        CALL SETRTN(AC,NDM,NTSR*NCOLRS,NDIM,UPS)
     ENDIF
-    IF (ISTART<0 .AND. .NOT.(NAR<NDIM .AND. NAR<3*NDM)) THEN
+    IF (AC%HOMCONT%ISTART<0 .AND. .NOT.(NAR<NDIM .AND. NAR<3*NDM)) THEN
        !    Adjust rotations
        IF(AC%BVP%IRTN==0)ALLOCATE(AC%BVP%NRTN(NDM))
        AC%BVP%IRTN=0
        DO I=1,NDM
           AC%BVP%NRTN(I)=NINT( (UPS(NAR-NDM+I,NTSR*NCOLRS)-UPS(I,0)) / &
-               (PI(2.d0) * (-ISTART)) )
+               (PI(2.d0) * (-AC%HOMCONT%ISTART)) )
           IF(AC%BVP%NRTN(I)/=0)THEN
              AC%BVP%IRTN=1
           ENDIF
@@ -1375,13 +1357,13 @@ CONTAINS
     ! Shift phase if necessary if continuing from
     ! a periodic orbit into a homoclinic one
 
-    IF (ISTART==4) THEN
+    IF (AC%HOMCONT%ISTART==4) THEN
 
        ! Try to find an approximate value for the equilibrium if it's not
        ! explicitely given. This is just the point where the speed is minimal.
        ! We hope that Newton's method will do the rest.
 
-       IF (IEQUIB>0) THEN
+       IF (AC%HOMCONT%IEQUIB>0) THEN
           ALLOCATE(F(NDM))
           UPSMIN=HUGE(1.d0)
           JMIN=0
@@ -1414,7 +1396,7 @@ CONTAINS
              JMIN=J
           ENDIF
        ENDDO
-       IF(UPSMIN<COMPZERO)THEN
+       IF(UPSMIN<AC%HOMCONT%COMPZERO)THEN
 
           !  try to get time central value if all points within a range
           !  are within an epsilon neighbourhood of the equilibrium
@@ -1429,7 +1411,7 @@ CONTAINS
              DO I=1,NDM
                 UPSI=UPSI+(UPS(I,J*NCOLRS)-PAR(I+11))**2
              ENDDO
-             IF(UPSI>COMPZERO)THEN
+             IF(UPSI>AC%HOMCONT%COMPZERO)THEN
                 J1=J+1
                 IF(J1==NTSR+1)J1=0
                 EXIT
@@ -1443,7 +1425,7 @@ CONTAINS
              DO I=1,NDM
                 UPSI=UPSI+(UPS(I,J*NCOLRS)-PAR(I+11))**2
              ENDDO
-             IF(UPSI>COMPZERO)THEN
+             IF(UPSI>AC%HOMCONT%COMPZERO)THEN
                 J2=J-1
                 IF(J2==-1)J2=NTSR
                 EXIT
@@ -1539,9 +1521,9 @@ CONTAINS
     ! to change the representation of the homoclinic orbit in UPS and
     ! UDOTPS.
 
-    IF (ISTART<0 .AND. NAR<NDIM .AND. NAR<3*NDM) THEN
+    IF (AC%HOMCONT%ISTART<0 .AND. NAR<NDIM .AND. NAR<3*NDM) THEN
        CALL TRANHO(AC,NTSR,NCOLRS,NDM,NDIM,TM,UPS,UDOTPS,PAR,ICP,NPAR)
-    ELSEIF (ISTART<0 .AND. NAR<NDIM .AND. NAR.GE.3*NDM) THEN
+    ELSEIF (AC%HOMCONT%ISTART<0 .AND. NAR<NDIM .AND. NAR.GE.3*NDM) THEN
        ! Copy forelast part
        DO J=0,NTSR*NCOLRS
           DO I=NDIM,NAR-NDM+1,-1
@@ -1560,7 +1542,7 @@ CONTAINS
     ! Preprocesses (perturbs) restart data to enable 
     ! initial computation of the adjoint variable
 
-    IF (NAR/=NDIM .AND. ISTART.GE.0 .AND. ITWIST==1) THEN
+    IF (NAR/=NDIM .AND. AC%HOMCONT%ISTART.GE.0 .AND. AC%HOMCONT%ITWIST==1) THEN
        PAR(10)= 0.0D0
        UPS(NAR+1:NDIM,:)=0.1d0
     ENDIF
@@ -1610,7 +1592,7 @@ CONTAINS
     IF(AP%ITP==5.AND.ABS(AP%ISW)==2) THEN 
        ! ** Fold continuation (start).
        CALL STPNBL(AC,PAR,ICP,NTSR,NCOLRS,RLDOT,UPS,UDOTPS,TM,NODIR)
-       IF(IEQUIB.GE.0)THEN
+       IF(AC%HOMCONT%IEQUIB.GE.0)THEN
           CALL SETRTN(AC,NDM,NTSR*NCOLRS,NDIM,UPS)
        ENDIF
     ELSEIF(IRS>0)THEN
@@ -1643,7 +1625,7 @@ CONTAINS
 
        ! Initialize solution and additional parameters
 
-       IF(IEQUIB.GE.0)THEN
+       IF(AC%HOMCONT%IEQUIB.GE.0)THEN
           CALL SETRTN(AC,NDM,NTSR*NCOLRS,NDIM,UPS)
        ENDIF
     ENDIF
@@ -1651,11 +1633,11 @@ CONTAINS
     ALLOCATE(RR(NDM),RI(NDM),VR(NDM,NDM),VT(NDM,NDM))
     CALL PVLS(NDM,UPS,PAR)
     CALL EIGHO(AC,1,RR,RI,VT,PAR(12),ICP,PAR,NDM)
-    CALL GETSTAB(NUNSTAB,RR,1)
+    CALL GETSTAB(AC,AC%HOMCONT%NUNSTAB,RR,1)
     CALL EIGHO(AC,2,RR,RI,VR,PAR(12),ICP,PAR,NDM)
-    CALL GETSTAB(NSTAB,RR,-1)
+    CALL GETSTAB(AC,AC%HOMCONT%NSTAB,RR,-1)
 
-    IF (IRS>0.OR.ISTART/=3)THEN
+    IF (IRS>0.OR.AC%HOMCONT%ISTART/=3)THEN
        DEALLOCATE(RR,RI,VR,VT)
        RETURN
     ENDIF
@@ -1663,7 +1645,7 @@ CONTAINS
     ! Set up artificial parameters at the left-hand end point of orbit
 
     IP=12
-    IF(IEQUIB.GE.0) THEN 
+    IF(AC%HOMCONT%IEQUIB.GE.0) THEN 
        IP=IP+NDM
     ELSE
        IP=IP+2*NDM
@@ -1673,17 +1655,17 @@ CONTAINS
     ! Parameters xi_1=eps_0, xi_i=0, i=2,NSTAB
 
     PAR(IP+1)=PAR(IP)
-    DO I=2,NUNSTAB
+    DO I=2,AC%HOMCONT%NUNSTAB
        PAR(IP+I)=0.0
     ENDDO
-    IP=IP+NUNSTAB
+    IP=IP+AC%HOMCONT%NUNSTAB
 
     ! Starting guess for homoclinic orbit in real principal unstable direction
 
     DO J=0,NTST*NCOL
        T=PAR(11)*J/(NTST*NCOL)
        DO K=1,NDIM
-          UPS(K,J)=PAR(11+K)+VR(NSTAB+1,K)*PAR(KP)*EXP(RR(NSTAB+1)*T)
+          UPS(K,J)=PAR(11+K)+VR(AC%HOMCONT%NSTAB+1,K)*PAR(KP)*EXP(RR(AC%HOMCONT%NSTAB+1)*T)
        ENDDO
        IF(AP%IID>0)THEN
           write(9,111)(ups(k,j),k=1,ndim)
@@ -1694,19 +1676,19 @@ CONTAINS
     ! Artificial parameters at the right-hand end point of the orbit
     ! omega_i=<x(1)-x_o,w_i^*>
 
-    DO I=1,NUNSTAB
+    DO I=1,AC%HOMCONT%NUNSTAB
        PAR(IP+I)=0.0
        DO J=1,NDM
-          IF(IEQUIB.GE.0) THEN 
+          IF(AC%HOMCONT%IEQUIB.GE.0) THEN 
              P=0
           ELSE
              P=PAR(11+J)-PAR(11+NDM+J)
           ENDIF
-          PAR(IP+I)=PAR(IP+I)+(P+VR(NSTAB+1,J)*PAR(KP)* &
-               EXP(RR(NSTAB+1)*PAR(11)))*VT(NSTAB+I,J)
+          PAR(IP+I)=PAR(IP+I)+(P+VR(AC%HOMCONT%NSTAB+1,J)*PAR(KP)* &
+               EXP(RR(AC%HOMCONT%NSTAB+1)*PAR(11)))*VT(AC%HOMCONT%NSTAB+I,J)
        ENDDO
     ENDDO
-    IP=IP+NUNSTAB
+    IP=IP+AC%HOMCONT%NUNSTAB
 
     DEALLOCATE(RR,RI,VR,VT)
   END SUBROUTINE STPNHO
@@ -1745,7 +1727,7 @@ CONTAINS
     !  *Compute eigenvalues
     INEIG=.FALSE.
     CALL EIGHO(AC,2,RR(1,1),RI(1,1),V(1,1,1),PAR(12),ICP,PAR,NDM)
-    IF(IEQUIB<0)THEN
+    IF(AC%HOMCONT%IEQUIB<0)THEN
        CALL EIGHO(AC,2,RR(1,2),RI(1,2),V(1,1,2),PAR(12+NDM),ICP,PAR,NDM)
     ENDIF
     IF(IID.GE.3)THEN
@@ -1753,26 +1735,26 @@ CONTAINS
        DO J=1,NDM
           WRITE(9,101) RR(J,1),RI(J,1)
        ENDDO
-       IF(IEQUIB<0)THEN
+       IF(AC%HOMCONT%IEQUIB<0)THEN
           WRITE(9,*) 'EIGENVALUES of RHS equilibrium'
           DO J=1,NDM
              WRITE(9,101) RR(J,2),RI(J,2)
           ENDDO
        ENDIF
     ENDIF
-    IF (((ITWIST==1).AND.(ISTART.GE.0)).OR.NPSI>0) THEN
+    IF (((AC%HOMCONT%ITWIST==1).AND.(AC%HOMCONT%ISTART.GE.0)).OR.AC%HOMCONT%NPSI>0) THEN
        DO I=1,NDIM
           PU0(I)=UPS(I)
           PU1(I)=UPS(I+NTST*NCOL*NDIM)
        ENDDO
     ENDIF
-    IF ((ITWIST==1).AND.(ISTART.GE.0)) THEN
+    IF ((AC%HOMCONT%ITWIST==1).AND.(AC%HOMCONT%ISTART.GE.0)) THEN
        CALL EIGHO(AC,1,RR(1,1),RI(1,1),VT(1,1,1),PAR(12),ICP,PAR,NDM)
-       IF(IEQUIB<0)THEN
+       IF(AC%HOMCONT%IEQUIB<0)THEN
           CALL EIGHO(AC,1,RR(1,2),RI(1,2),VT(1,1,2),PAR(12+NDM),ICP,PAR,NDM)
        ENDIF
        INEIG=.TRUE.
-       ORIENT = PSIHO(NDM,0,RR,RI,V,VT,ICP,PAR,PU0,PU1)
+       ORIENT = PSIHO(AC,NDM,0,RR,RI,V,VT,ICP,PAR,PU0,PU1)
        IF(IID.GE.3)THEN
           IF (ORIENT<0.0D0) THEN
              WRITE(9,102) ORIENT             
@@ -1782,16 +1764,16 @@ CONTAINS
        ENDIF
     ENDIF
 
-    DO I=1,NPSI
-       IF((IPSI(I)>10).AND..NOT.INEIG) THEN
+    DO I=1,AC%HOMCONT%NPSI
+       IF((AC%HOMCONT%IPSI(I)>10).AND..NOT.INEIG) THEN
           CALL EIGHO(AC,1,RR(1,1),RI(1,1),VT(1,1,1),PAR(12),ICP,PAR,NDM)
-          IF(IEQUIB<0)THEN
+          IF(AC%HOMCONT%IEQUIB<0)THEN
              CALL EIGHO(AC,1,RR(1,2),RI(1,2),VT(1,1,2),PAR(12+NDM),ICP,PAR,NDM)
           ENDIF
           INEIG=.TRUE.
        ENDIF
-       PAR(20+IPSI(I))=PSIHO(NDM,IPSI(I),RR,RI,V,VT,ICP,PAR,PU0,PU1)
-       IF(IID.GE.3)WRITE(9,104)IPSI(I),PAR(20+IPSI(I))
+       PAR(20+AC%HOMCONT%IPSI(I))=PSIHO(AC,NDM,AC%HOMCONT%IPSI(I),RR,RI,V,VT,ICP,PAR,PU0,PU1)
+       IF(IID.GE.3)WRITE(9,104)AC%HOMCONT%IPSI(I),PAR(20+AC%HOMCONT%IPSI(I))
     ENDDO
 
     DEALLOCATE(PU0,PU1,RR,RI,V,VT)
@@ -1804,7 +1786,7 @@ CONTAINS
   END FUNCTION FNCSHO
 
 ! ------ --------- -------- -----
-  DOUBLE PRECISION FUNCTION PSIHO(NDM,IS,RR,RI,V,VT,ICP,PAR,PU0,PU1)
+  DOUBLE PRECISION FUNCTION PSIHO(AC,NDM,IS,RR,RI,V,VT,ICP,PAR,PU0,PU1)
 
     ! The conditions for degenerate homoclinic orbits are given by PSI(IS)=0.
 
@@ -1816,6 +1798,7 @@ CONTAINS
     ! and right (PU1) endpoints of the solution (+  vector if that is computed)
 
     USE INTERFACES, ONLY: FUNC
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(IN) :: ICP(*),NDM,IS
     DOUBLE PRECISION, INTENT(IN) :: PAR(*),RR(NDM,*),RI(NDM,*), &
          V(NDM,NDM,*),VT(NDM,NDM,*),PU0(*),PU1(*)
@@ -1863,50 +1846,51 @@ CONTAINS
 
     CASE(1)
        ! Resonant eigenvalues (neutral saddle)
-       PSIHO=RR(NSTAB,1)+RR(NSTAB+1,1)+RI(NSTAB,1)+RI(NSTAB+1,1)
+       PSIHO=RR(AC%HOMCONT%NSTAB,1)+RR(AC%HOMCONT%NSTAB+1,1)+&
+            RI(AC%HOMCONT%NSTAB,1)+RI(AC%HOMCONT%NSTAB+1,1)
 
     CASE(2)
        ! Double real leading eigenvalues (stable)
        !   (saddle, saddle-focus transition)
-       IF (ABS(RI(NSTAB,1))>COMPZERO) THEN
-          PSIHO=-(RI(NSTAB,1)-RI(NSTAB-1,1))**2
+       IF (ABS(RI(AC%HOMCONT%NSTAB,1))>AC%HOMCONT%COMPZERO) THEN
+          PSIHO=-(RI(AC%HOMCONT%NSTAB,1)-RI(AC%HOMCONT%NSTAB-1,1))**2
        ELSE
-          PSIHO=(RR(NSTAB,1)-RR(NSTAB-1,1))**2
+          PSIHO=(RR(AC%HOMCONT%NSTAB,1)-RR(AC%HOMCONT%NSTAB-1,1))**2
        ENDIF
 
     CASE(3)
        ! Double real positive eigenvalues (unstable)
        !   (saddle, saddle-focus transition)
-       IF (ABS(RI(NSTAB+1,1))>COMPZERO) THEN
-          PSIHO=-(RI(NSTAB+1,1)-RI(NSTAB+2,1))**2
+       IF (ABS(RI(AC%HOMCONT%NSTAB+1,1))>AC%HOMCONT%COMPZERO) THEN
+          PSIHO=-(RI(AC%HOMCONT%NSTAB+1,1)-RI(AC%HOMCONT%NSTAB+2,1))**2
        ELSE
-          PSIHO=(RR(NSTAB+1,1)-RR(NSTAB+2,1))**2
+          PSIHO=(RR(AC%HOMCONT%NSTAB+1,1)-RR(AC%HOMCONT%NSTAB+2,1))**2
        ENDIF
 
     CASE(4)
        ! Neutral saddle, saddle-focus or bi-focus (includes 1, above, also) 
-       PSIHO=RR(NSTAB,1)+RR(NSTAB+1,1)
+       PSIHO=RR(AC%HOMCONT%NSTAB,1)+RR(AC%HOMCONT%NSTAB+1,1)
 
     CASE(5)
        ! Neutrally-divergent saddle-focus (stable eigenvalues complex)
-       PSIHO=RR(NSTAB,1)+RR(NSTAB+1,1)+RR(NSTAB-1,1)
+       PSIHO=RR(AC%HOMCONT%NSTAB,1)+RR(AC%HOMCONT%NSTAB+1,1)+RR(AC%HOMCONT%NSTAB-1,1)
 
     CASE(6)
        ! Neutrally-divergent saddle-focus (unstable eigenvalues complex)
-       PSIHO=RR(NSTAB,1)+RR(NSTAB+1,1)+RR(NSTAB+2,1)
+       PSIHO=RR(AC%HOMCONT%NSTAB,1)+RR(AC%HOMCONT%NSTAB+1,1)+RR(AC%HOMCONT%NSTAB+2,1)
 
     CASE(7)
        ! Three leading eigenvalues (stable)
        VNORM1 = 0D0
        VNORM2 = 0D0      
        DO I=1,NDM
-          VNORM1 = VNORM1 + ABS(V(NSTAB,I,1))
-          VNORM2 = VNORM2 + ABS(V(NSTAB-2,I,1))
+          VNORM1 = VNORM1 + ABS(V(AC%HOMCONT%NSTAB,I,1))
+          VNORM2 = VNORM2 + ABS(V(AC%HOMCONT%NSTAB-2,I,1))
        ENDDO
        IF (VNORM1>VNORM2) THEN
-          PSIHO=RR(NSTAB,1)-RR(NSTAB-2,1)
+          PSIHO=RR(AC%HOMCONT%NSTAB,1)-RR(AC%HOMCONT%NSTAB-2,1)
        ELSE
-          PSIHO=RR(NSTAB-2,1)-RR(NSTAB,1)
+          PSIHO=RR(AC%HOMCONT%NSTAB-2,1)-RR(AC%HOMCONT%NSTAB,1)
        ENDIF
 
     CASE(8)
@@ -1914,79 +1898,80 @@ CONTAINS
        VNORM1 = 0D0
        VNORM2 = 0D0      
        DO I=1,NDM
-          VNORM1 = VNORM1 + ABS(V(NSTAB+1,I,1))
-          VNORM2 = VNORM2 + ABS(V(NSTAB+3,I,1))
+          VNORM1 = VNORM1 + ABS(V(AC%HOMCONT%NSTAB+1,I,1))
+          VNORM2 = VNORM2 + ABS(V(AC%HOMCONT%NSTAB+3,I,1))
        ENDDO
        IF (VNORM1>VNORM2) THEN
-          PSIHO=RR(NSTAB+1,1)-RR(NSTAB+3,1)
+          PSIHO=RR(AC%HOMCONT%NSTAB+1,1)-RR(AC%HOMCONT%NSTAB+3,1)
        ELSE
-          PSIHO=RR(NSTAB+3,1)-RR(NSTAB+1,1)
+          PSIHO=RR(AC%HOMCONT%NSTAB+3,1)-RR(AC%HOMCONT%NSTAB+1,1)
        ENDIF
 
     CASE(9)
        ! Local bifurcation (zero eigenvalue or Hopf): NSTAB decreases
        !  (nb. the problem becomes ill-posed after a zero of 9 or 10)
-       PSIHO=RR(NSTAB,1)
+       PSIHO=RR(AC%HOMCONT%NSTAB,1)
 
     CASE(10)
        ! Local bifurcation (zero eigenvalue or Hopf): NSTAB increases 
-       PSIHO=RR(NSTAB+1,1) 
+       PSIHO=RR(AC%HOMCONT%NSTAB+1,1) 
 
     CASE(11)
        ! Orbit flip (with respect to leading stable direction)
        ! e.g. 1D unstable manifold
        DO J=1,NDM
-          PSIHO= PSIHO + F1(J)*VT(NSTAB,J,1)
+          PSIHO= PSIHO + F1(J)*VT(AC%HOMCONT%NSTAB,J,1)
        ENDDO
-       PSIHO= PSIHO * EXP(-PAR(11)*RR(NSTAB,1)/2.0D0)
+       PSIHO= PSIHO * EXP(-PAR(11)*RR(AC%HOMCONT%NSTAB,1)/2.0D0)
        DEALLOCATE(F1)
 
     CASE(12)
        ! Orbit flip (with respect to leading unstable direction)
        ! e.g. 1D stable manifold
        DO J=1,NDM
-          PSIHO= PSIHO + F0(J)*VT(NSTAB+1,J,1)
+          PSIHO= PSIHO + F0(J)*VT(AC%HOMCONT%NSTAB+1,J,1)
        ENDDO
-       PSIHO= PSIHO * EXP(PAR(11)*RR(NSTAB+1,1)/2.0D0)
+       PSIHO= PSIHO * EXP(PAR(11)*RR(AC%HOMCONT%NSTAB+1,1)/2.0D0)
        DEALLOCATE(F0)
 
     CASE(13)
        ! Inclination flip (critically twisted) with respect to stable manifold
        !   e.g. 1D unstable manifold   
        DO I=1,NDM
-          PSIHO= PSIHO + PU0(NDM+I)*V(NSTAB,I,1)
+          PSIHO= PSIHO + PU0(NDM+I)*V(AC%HOMCONT%NSTAB,I,1)
        ENDDO
-       PSIHO= PSIHO * EXP(-PAR(11)*RR(NSTAB,1)/2.0D0)
+       PSIHO= PSIHO * EXP(-PAR(11)*RR(AC%HOMCONT%NSTAB,1)/2.0D0)
 
     CASE(14)
        ! Inclination flip (critically twisted) with respect to unstable manifold
        !   e.g. 1D stable manifold
        DO I=1,NDM
-          PSIHO= PSIHO + PU1(NDM+I)*V(NSTAB+1,I,1)
+          PSIHO= PSIHO + PU1(NDM+I)*V(AC%HOMCONT%NSTAB+1,I,1)
        ENDDO
-       PSIHO= PSIHO * EXP(PAR(11)*RR(NSTAB+1,1)/2.0D0)
+       PSIHO= PSIHO * EXP(PAR(11)*RR(AC%HOMCONT%NSTAB+1,1)/2.0D0)
 
     CASE(15)
        ! Non-central homoclinic to saddle-node (in stable manifold)
        DO I=1,NDM 
-          PSIHO=PSIHO+(PAR(11+I)-PU1(I))*V(NSTAB+1,I,1)
+          PSIHO=PSIHO+(PAR(11+I)-PU1(I))*V(AC%HOMCONT%NSTAB+1,I,1)
        ENDDO
 
     CASE(16)
        ! Non-central homoclinic to saddle-node (in unstable manifold)
        DO I=1,NDM 
-          PSIHO=PSIHO+(PAR(11+I)-PU0(I))*V(NSTAB+1,I,1)
+          PSIHO=PSIHO+(PAR(11+I)-PU0(I))*V(AC%HOMCONT%NSTAB+1,I,1)
        ENDDO
 
     END SELECT
   END FUNCTION PSIHO
 
 ! ---------- -------
-  SUBROUTINE GETSTAB(N,RR,STAB)
+  SUBROUTINE GETSTAB(AC,N,RR,STAB)
 
     ! Determine number of stable (STAB==-1) or unstable (STAB==1)
     ! eigenvalues in RR
 
+    TYPE(AUTOCONTEXT), INTENT(IN)::AC
     INTEGER, INTENT(INOUT) :: N
     DOUBLE PRECISION, INTENT(IN) :: RR(:)
     INTEGER, INTENT(IN) :: STAB
@@ -1996,7 +1981,7 @@ CONTAINS
     IF(N/=-1)RETURN
 
     IAMIN=0
-    IF(IEQUIB==2)THEN
+    IF(AC%HOMCONT%IEQUIB==2)THEN
        !exclude eigenvalue closest to zero for saddle-node homs
        IAMIN=1
        DO I=1,SIZE(RR)
@@ -2217,9 +2202,9 @@ CONTAINS
     ENDIF
 
     IF (IMFD==1) THEN
-       MCOND = NUNSTAB
+       MCOND = AC%HOMCONT%NUNSTAB
     ELSE
-       MCOND = NSTAB
+       MCOND = AC%HOMCONT%NSTAB
     ENDIF
 
     ! Call LAPACK routine for the Schur decomposition of A
@@ -2301,10 +2286,3 @@ CONTAINS
 !-----------------------------------------------------------------------
 
 END MODULE HOMCONT
-
-BLOCK DATA
-   INTEGER ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV
-   COMMON /BLHOM/ ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV
-   DATA ITWIST,ISTART,IEQUIB,NFIXED,NPSI,NUNSTAB,NSTAB,NREV &
-        /0,5,1,0,0,-1,-1,0/
-END BLOCK DATA

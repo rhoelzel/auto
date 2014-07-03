@@ -30,15 +30,6 @@
 
       TYPE(AUTOCONTEXT) AC
 
-      AC%ID=ID
-      AC%CUNIT=ID*4+3
-      AC%SUNIT=ID*4+4
-      AC%BUNIT=ID*4+5
-      AC%DUNIT=ID*4+6
-
-      AC%IO%MBR=0
-      AC%IO%MLAB=0
-
 ! Get Fortran string filename from character array in CFILE
 
       DO I=1,8
@@ -46,11 +37,18 @@
       END DO
 
 ! Initialization :
-       CALL MPIINI()
-       IF(MPIIAM()/=0)THEN 
+! ID and i/o units
+      AC%ID=ID
+      AC%CUNIT=ID*4+3
+      AC%SUNIT=ID*4+4
+      AC%BUNIT=ID*4+5
+      AC%DUNIT=ID*4+6
+      
+      CALL MPIINI()
+      IF(MPIIAM()/=0)THEN 
          CALL MPIWORKER(AC) ! not called with nompi.f90 
          ! never returns
-       ENDIF
+      ENDIF
 
        FIRST=.TRUE.
        UNITC=AC%CUNIT
@@ -319,7 +317,7 @@
          IF(EOF.OR.IERR==-1)EXIT
          KEYS=.TRUE.
          IF(IERR==1)THEN
-            CALL INSTRHO(STR(1:KEYEND),STR(POS:),LISTLEN,IERR)
+            CALL INSTRHO(AC,STR(1:KEYEND),STR(POS:),LISTLEN,IERR)
          ENDIF
          IF(IERR==1)THEN
             WRITE(6,'(A,A,A,I2)')"Unknown AUTO constant ", &
